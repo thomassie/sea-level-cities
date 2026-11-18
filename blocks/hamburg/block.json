@@ -1,0 +1,1 @@
+{"place": "hamburg", "cols": 640, "rows": 530, "bbox": [9.7, 53.38, 10.35, 53.7], "spill_cols": 1560, "spill_rows": 1152, "width_km": 43.0, "height_km": 35.382, "min_m": -19.73, "max_m": 159.51, "exaggeration": 15.0, "seafloor_clip_m": -60.0, "subsidence": null, "layers": ["roads", "names", "borders", "admin"]}

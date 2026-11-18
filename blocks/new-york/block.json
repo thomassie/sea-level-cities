@@ -1,0 +1,1 @@
+{"place": "new-york", "cols": 640, "rows": 592, "bbox": [-74.27, 40.48, -73.7, 40.88], "spill_cols": 2052, "spill_rows": 1440, "width_km": 48.12, "height_km": 44.228, "min_m": -31.61, "max_m": 212.51, "exaggeration": 10.0, "seafloor_clip_m": -60.0, "subsidence": null, "layers": ["roads", "names", "borders", "admin"]}

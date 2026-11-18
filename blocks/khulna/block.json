@@ -1,0 +1,1 @@
+{"place": "khulna", "cols": 640, "rows": 769, "bbox": [89.0, 22.05, 89.45, 22.55], "spill_cols": 1620, "spill_rows": 1800, "width_km": 46.347, "height_km": 55.285, "min_m": -32.93, "max_m": 5.99, "exaggeration": 60.0, "subsidence": null, "layers": ["roads", "names", "borders", "admin"]}

@@ -1,0 +1,1 @@
+{"place": "mekong", "cols": 640, "rows": 650, "bbox": [105.9, 9.4, 106.8, 10.3], "spill_cols": 3240, "spill_rows": 3240, "width_km": 98.711, "height_km": 99.513, "min_m": -28.98, "max_m": 4.97, "exaggeration": 60.0, "seafloor_clip_m": -60.0, "subsidence": null, "layers": ["roads", "names", "borders", "admin"]}

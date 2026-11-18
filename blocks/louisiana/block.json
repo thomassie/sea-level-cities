@@ -1,0 +1,1 @@
+{"place": "louisiana", "cols": 640, "rows": 521, "bbox": [-91.0, 29.05, -89.8, 29.9], "spill_cols": 4320, "spill_rows": 3060, "width_km": 116.294, "height_km": 93.984, "min_m": -36.03, "max_m": 5.44, "exaggeration": 60.0, "seafloor_clip_m": -60.0, "subsidence": null, "layers": ["borders", "admin"]}

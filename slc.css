@@ -1,0 +1,195 @@
+/* Sea-level Cities. Everything is scoped under .slc and ids are prefixed slc-, so the page can be embedded in a
+   host site with its own styles (test: embed-example.html). Colours only through theme.css tokens.
+   Layout follows the container's width (container queries), not the viewport's. */
+
+.slc {
+  --font-text: Helvetica, Arial, sans-serif;
+  --font-support: "Google Sans Code", ui-monospace, monospace;
+  --step--1: 0.8125rem; --step-0: 1rem; --step-1: 1.25rem; --step-2: 1.75rem; --step-3: 2.4rem;
+  --gap: clamp(1rem, 3vw, 2rem);
+  --sticky-top: 0px;
+  container: slc / inline-size;
+  font-family: var(--font-text); color: var(--ink); background: var(--paper); line-height: 1.5;
+}
+/* shield against a host's element styles */
+.slc :where(h1, h2, h3, p, ul, li, button, figure) { margin: 0; padding: 0; font: inherit; color: inherit; border: 0; background: none; }
+.slc :where(canvas, img, select, input, label, figcaption, form, table, caption, th, td, em) { margin: 0; border: 0; }
+.slc :where(canvas, img) { padding: 0; }
+.slc :where(a) { color: var(--link); text-decoration: underline; text-decoration-style: solid; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.slc[data-layout="standalone"] { max-width: 1280px; margin: 0 auto; padding: 0 16px; }
+
+.slc .slc-head { display: grid; gap: 0.75rem; padding-block: clamp(2rem, 6vw, 4rem) 2rem; max-width: 46rem; }
+.slc h1 { font-size: var(--step-3); font-weight: 700; line-height: 1.1; }
+.slc .slc-dek { font-size: var(--step-1); color: var(--muted); }
+.slc .slc-note { font-family: var(--font-support); font-size: var(--step--1); color: var(--muted); }
+.slc .slc-flag { border-left: 3px solid var(--red); padding: 0.4rem 0.8rem; }
+
+/* ---------- The story: steps scroll past the held map ---------- */
+.slc .story { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--gap); position: relative; }
+.slc .story__steps { grid-column: 1; grid-row: 1; min-width: 0; padding-bottom: 40vh; }
+.slc .story__graphic { grid-column: 2; grid-row: 1; position: sticky; top: var(--sticky-top);
+  height: calc(100vh - var(--sticky-top)); display: grid; align-content: center; min-width: 0; }
+.slc .slc-block { position: relative; width: 100%; height: min(76vh, 700px); cursor: grab; }
+.slc .slc-readout { font-family: var(--font-support); font-size: var(--step--1); color: var(--muted); min-height: 1.5em; padding-top: 0.4rem; }
+.slc .slc-readout b { color: var(--ink); font-weight: 500; }
+/* labels on stalks over the 3D block (block3d.js) */
+.slc .b3d-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.slc .b3d-stalks { position: absolute; inset: 0; width: 100%; height: 100%; }
+.slc .b3d-stalks line { stroke: var(--ink); stroke-width: 2; }
+.slc .b3d-stalks line.b3d-red { stroke: var(--red); }
+.slc .b3d-stalks line.b3d-muted { stroke: var(--blue); stroke-width: 1.5; }
+.slc .b3d-label { position: absolute; left: 0; top: 0; white-space: nowrap; font-size: var(--step-1); line-height: 1.1; color: var(--ink);
+  text-shadow: 0 0 3px var(--paper), 0 0 6px var(--paper); }
+.slc .b3d-label.b3d-red { color: var(--red); }
+.slc .b3d-label.b3d-muted { color: var(--blue); font-style: italic; }  /* water names, as on printed maps */
+.slc .slc-credit { font-family: var(--font-support); font-size: 0.7rem; color: var(--muted); padding-top: 0.3rem; }
+
+.slc .step { min-height: 80vh; display: grid; align-content: center; padding-block: 1.5rem; }
+.slc .step:first-child { min-height: 60vh; align-content: start; }
+.slc .step__text { display: grid; gap: 0.75rem; max-width: 26rem; color: var(--muted); transition: color 0.25s; }
+.slc .step.is-active .step__text { color: var(--ink); }
+.slc .step__text strong { color: var(--ink); font-weight: 600; }
+.slc .step__text .slc-src { font-family: var(--font-support); font-size: var(--step--1); }
+
+/* the reader's chosen spot: always shown, boxed so it reads on any colour */
+.slc .b3d-label.b3d-pin { font-family: var(--font-support); font-size: var(--step--1); font-weight: 500; color: var(--ink);
+  background: var(--paper); border: 1.5px solid var(--red); padding: 0.15rem 0.45rem; text-shadow: none; }
+.slc .b3d-stalks line.b3d-pin { stroke: var(--red); stroke-width: 2.5; }
+
+/* ---------- Explorer: zoom in and look up a spot ---------- */
+.slc .b3d-label.b3d-place { font-family: var(--font-support); font-size: 0.72rem; color: var(--muted);
+  text-shadow: 0 0 2px var(--paper), 0 0 4px var(--paper), 0 0 6px var(--paper); }
+.slc .slc-search { display: grid; gap: 0.25rem; }
+.slc .slc-search label { color: var(--muted); }
+.slc .slc-search input { font: inherit; padding: 0.45rem 0.6rem; border: 1px solid var(--ink); border-radius: 4px;
+  background: var(--paper); color: var(--ink); }
+.slc .slc-explore { padding-block: 3rem 2rem; border-top: 1px solid var(--rule); }
+.slc .slc-explore h2 { font-size: var(--step-2); line-height: 1.15; margin: 0 0 0.5rem; color: var(--ink); }
+.slc .slc-explore__dek { max-width: 40rem; color: var(--muted); margin: 0 0 1.25rem; }
+.slc .slc-explore__grid { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: var(--gap); align-items: start; }
+.slc .slc-block--explore { height: min(80vh, 760px); cursor: crosshair; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+.slc .slc-zoom { position: absolute; top: 0.6rem; right: 0.6rem; z-index: 2; display: grid; gap: 1px; background: var(--rule);
+  border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+.slc .slc-zoom button { width: 2.25rem; height: 2.25rem; border: 0; background: var(--paper); color: var(--ink); font-size: 1.15rem;
+  line-height: 1; cursor: pointer; }
+.slc .slc-zoom button:hover { background: var(--rule); }
+.slc .slc-hint { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 3; margin: 0; pointer-events: none;
+  padding: 0.5rem 0.8rem; background: var(--ink); color: var(--paper); font-family: var(--font-support); font-size: var(--step--1);
+  border-radius: 4px; opacity: 0; transition: opacity 0.2s; }
+.slc .slc-hint.is-on { opacity: 0.92; }
+.slc .slc-explore__panel { display: grid; gap: 0.6rem; font-family: var(--font-support); font-size: var(--step--1); }
+.slc .slc-seg { display: flex; border: 1px solid var(--ink); border-radius: 4px; overflow: hidden; }
+.slc .slc-seg button { flex: 1; padding: 0.45rem 0.3rem; border: 0; border-left: 1px solid var(--ink); background: var(--paper);
+  color: var(--ink); font: inherit; cursor: pointer; }
+.slc .slc-seg button:first-child { border-left: 0; }
+.slc .slc-seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.slc .slc-seg.is-off { opacity: 0.35; pointer-events: none; }
+.slc .slc-seg-note { margin: -0.4rem 0 0.4rem; }
+.slc .slc-locate { justify-self: start; padding: 0.45rem 0.8rem; border: 1px solid var(--ink); border-radius: 4px;
+  background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; }
+.slc .slc-locate:hover, .slc .slc-zoom button:focus-visible, .slc .slc-seg button:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+.slc .slc-answer { padding: 0.9rem 1rem; border-left: 3px solid var(--red); background: var(--paper);
+  font-family: var(--font-body, inherit); font-size: var(--step-0); color: var(--ink); display: grid; gap: 0.5rem; }
+.slc .slc-answer p { margin: 0; }
+.slc .slc-where { font-family: var(--font-support); font-size: var(--step--1); color: var(--muted); }
+.slc .slc-area, .slc .slc-split { font-size: var(--step--1); font-family: var(--font-support); }
+.slc .slc-split p { margin: 0 0 0.5em; }
+.slc .slc-grid { border-collapse: collapse; font-family: var(--font-support); font-size: var(--step--1); }
+.slc .slc-grid caption { text-align: left; color: var(--muted); padding-bottom: 0.3rem; }
+.slc .slc-grid th, .slc .slc-grid td { padding: 0.2rem 0.9rem 0.2rem 0; text-align: left; font-weight: 400; }
+.slc .slc-grid thead th { color: var(--muted); border-bottom: 1px solid var(--rule); }
+.slc .slc-grid td { color: var(--muted); }
+.slc .slc-grid td.is-below { color: var(--red); font-weight: 500; }
+
+/* ---------- Narrow: the map on top, cards scroll over its lower part ---------- */
+@container slc (max-width: 860px) {
+  .slc .story { display: block; }
+  .slc .story__graphic { height: calc(100svh - var(--sticky-top)); align-content: start; z-index: 0; padding-top: 0.5rem; background: var(--paper); }
+  .slc .slc-block { height: 60svh; min-height: 280px; }
+  .slc .b3d-label { font-size: var(--step-0); }
+  .slc .slc-explore__grid { grid-template-columns: minmax(0, 1fr); }
+  .slc .slc-block--explore { height: 62svh; min-height: 300px; }
+  .slc .story__steps { position: relative; z-index: 1; margin-top: calc(var(--sticky-top) - 100svh); padding-bottom: 50svh; pointer-events: none; }
+  .slc .step, .slc .step:first-child { min-height: 92svh; align-content: end; padding-bottom: 6svh; }
+  .slc .step__text { pointer-events: auto; max-width: none; padding: 1rem 1.1rem; background: var(--paper);
+    border: 1px solid var(--rule); color: var(--ink); box-shadow: 0 6px 24px rgb(0 0 0 / 0.08); }
+}
+@media (prefers-reduced-motion: reduce) { .slc .step__text { transition: none; } }
+
+/* Gauge staff (staff.js): a ruler in metres above local mean sea level */
+.slc .slc-staff { width: 196px; height: auto; display: block; overflow: visible; font: 11px/1 'Google Sans Code', ui-monospace, monospace; }
+.slc .slc-staff-bar { fill: var(--paper); stroke: var(--ink); stroke-width: 1; }
+.slc .slc-staff-water { fill: var(--blue); opacity: 0.55; }
+.slc .slc-staff-axis line { stroke: var(--ink); }
+.slc .slc-staff-axis text, .slc .slc-staff-unit { fill: var(--muted); }
+.slc .slc-staff-mark line { stroke: var(--ink); stroke-width: 1.5; }
+.slc .slc-staff-mark text { fill: var(--ink); }
+.slc .slc-staff-leader { fill: none; stroke: var(--rule); }
+/* likely range: a bracket right of the bar, shown for the projection being looked at (staff.js) */
+.slc .slc-staff-bracket { fill: none; stroke: var(--loss-far); stroke-width: 1.5; }
+.slc .slc-staff-mark.is-future .slc-staff-bracket { opacity: 0; transition: opacity 300ms; }
+.slc .slc-staff-mark.is-future.is-current .slc-staff-bracket { opacity: 1; }
+.slc .slc-staff-key text { fill: var(--muted); }
+.slc .slc-staff-key .slc-staff-bracket { stroke: var(--muted); }
+.slc .slc-staff-mark.is-ground line { stroke: var(--muted); stroke-dasharray: 2 2; }
+.slc .slc-staff-mark.is-tide line { stroke: var(--blue); }
+.slc .slc-staff-mark.is-crest line { stroke: var(--ink); stroke-width: 3; }
+.slc .slc-staff-mark.is-storm line { stroke: var(--red); }
+.slc .slc-staff-mark.is-storm text { fill: var(--red); }
+.slc .slc-staff-mark.is-future line { stroke: var(--loss-far); }
+.slc .slc-staff-mark { transition: opacity 400ms; }
+.slc .slc-staff-mark.is-off { opacity: 0; }
+.slc .slc-staff-now { fill: var(--ink); }
+.slc .slc-staff-mark.is-current text { font-weight: 700; }
+.slc .slc-staff-mark.is-current line { stroke-width: 3.5; }
+.slc .slc-staff-mark.is-crest.is-current line { stroke-width: 5; }
+@media (prefers-reduced-motion: reduce) { .slc .slc-staff-mark { transition: none; } }
+
+/* ---------- Chapters: block and gauge staff side by side ---------- */
+.slc .slc-intro { display: grid; gap: 0.9rem; max-width: 40rem; font-size: var(--step-1); line-height: 1.45; padding-bottom: 2rem; }
+.slc .slc-intro strong { font-weight: 600; }
+.slc .slc-chapter { border-top: 1px solid var(--rule); padding-top: 1rem; }
+.slc .slc-kicker { font-family: var(--font-support); font-size: var(--step--1); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.slc .step__text h2 { font-size: var(--step-2); line-height: 1.15; font-weight: 700; color: var(--ink); }
+.slc .slc-graphic { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.75rem; }
+.slc .slc-graphic--staff { grid-template-columns: auto; justify-content: center; }
+.slc .slc-staffbox .slc-staff { width: auto; height: min(46vh, 420px); }
+.slc .slc-graphic--staff .slc-staffbox .slc-staff { height: min(53vh, 490px); }
+
+/* ---------- Close: all staffs side by side ---------- */
+.slc .slc-compare { padding-block: 3rem 2rem; border-top: 1px solid var(--rule); }
+.slc .slc-compare h2 { font-size: var(--step-2); line-height: 1.15; margin: 0 0 0.5rem; }
+.slc .slc-compare__dek { max-width: 40rem; color: var(--muted); margin: 0 0 1.25rem; }
+.slc .slc-compare__row { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1.25rem 0.5rem; }
+.slc .slc-compare__cell { display: grid; gap: 0.3rem; min-width: 0; }
+.slc .slc-compare__cell figcaption { font-family: var(--font-support); font-size: var(--step--1); color: var(--ink); }
+.slc .slc-compare__cell .slc-staff { width: 100%; height: auto; max-width: 190px; }
+.slc .slc-compare__note { margin-top: 1rem; }
+.slc .slc-pick { display: grid; gap: 0.25rem; color: var(--muted); }
+.slc .slc-pick select { font: inherit; padding: 0.45rem 0.6rem; border: 1px solid var(--ink); border-radius: 4px; background: var(--paper); color: var(--ink); }
+.slc .slc-ground[hidden] { display: none; }
+
+@container slc (max-width: 860px) {
+  .slc .slc-graphic { display: block; position: relative; }
+  .slc .slc-staffbox { position: absolute; left: 0; top: 0.25rem; z-index: 1; padding: 0.25rem 0.25rem 0;
+    background: color-mix(in srgb, var(--paper) 82%, transparent); border-radius: 4px; }
+  .slc .slc-staffbox .slc-staff { height: 30svh; }
+  .slc .slc-graphic--staff .slc-staffbox { position: static; background: none; display: grid; justify-content: center; }
+  .slc .slc-graphic--staff .slc-staffbox .slc-staff { height: 42svh; }
+  .slc .slc-intro { font-size: var(--step-0); }
+}
+
+/* Without WebGL: still images of each step */
+.slc .slc-block--still { cursor: default; display: grid; align-content: center; gap: 0.3rem; }
+.slc .slc-block--still img { width: 100%; height: 100%; max-height: 100%; object-fit: contain; min-height: 0; }
+
+/* ---------- Sources and method ---------- */
+.slc .slc-method { padding-block: 3rem 4rem; border-top: 1px solid var(--rule); }
+.slc .slc-method h2 { font-size: var(--step-2); line-height: 1.15; margin: 0 0 1rem; }
+.slc .slc-method h3 { font-weight: 700; margin: 1rem 0 0.4rem; }
+.slc .slc-method__cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); }
+.slc .slc-method p, .slc .slc-method li { color: var(--muted); max-width: 38rem; }
+.slc .slc-method p + p { margin-top: 0.6rem; }
+.slc .slc-method ul { list-style: none; display: grid; gap: 0.5rem; font-size: var(--step--1); font-family: var(--font-support); }
+.slc .slc-method em { font-style: italic; }
+@container slc (max-width: 860px) { .slc .slc-method__cols { grid-template-columns: minmax(0, 1fr); } }
