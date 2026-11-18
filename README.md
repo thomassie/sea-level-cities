@@ -15,7 +15,7 @@ Published to `thomassie/sea-level-cities` (GitHub Pages) by `.github/scripts/pub
 | `data/units.json`, `data/exposure.json` | Administrative units (OpenStreetMap) and people below the line per unit, for the explorer |
 | `data/meta.json` | Export time and source database |
 | `blocks/<place>/` | 3D block assets baked by `pipeline/slr/block.py`: height, spill (lowest water level that reaches each cell), shade, borders, roads, names, admin; `block.json` holds size and exaggeration |
-| `static/<place>-<step>.jpg` | Still images of each step for browsers without WebGL (`tools/static/sea-level-cities.mjs`) |
+| `static/<place>-<step>.jpg`, `static/<place>-<step>-dark.jpg` | Still images of each step for browsers without WebGL, light and dark (`tools/static/sea-level-cities.mjs`) |
 | `og.png`, `figure-light.png`, `figure-dark.png` | Link preview and series figures (`tools/og/sea-level-cities.mjs`) |
 
 All levels in the data are metres above EGM2008; the page shows them above local mean sea level (`wl - msl_m`).

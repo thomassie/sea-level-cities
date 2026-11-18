@@ -36,7 +36,8 @@
   };
   const live = new Set();   // { b, extra }: blocks that exist now, for theme changes
   const paint = (x) => x.b.palette({ ...PALETTES[isDark() ? 'dark' : 'light'], ...x.extra });
-  const applyPalette = () => live.forEach(paint);
+  const stills = new Set();   // functions that redraw a chapter's still image (no WebGL) in the current theme
+  const applyPalette = () => { live.forEach(paint); stills.forEach((f) => f()); };
   if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyPalette);
   new MutationObserver(applyPalette).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   const WEBGL = FCC.block3d.supported();
@@ -445,8 +446,10 @@
           .finally(() => { pending = null; });
       }
       // Without WebGL: the step's image, rendered from the same block state by tools/static/sea-level-cities.mjs.
-      const still = (i) => { if (!el || WEBGL) return; const img = el.querySelector('img');
-        img.src = `${base}static/${c.P}-${i}.jpg`; img.alt = `3D view of ${c.p.name}. ${plain(steps[i].html)}`; };
+      let stillAt = 0;
+      const still = (i) => { if (!el || WEBGL) return; const img = el.querySelector('img'); stillAt = i;
+        img.src = `${base}static/${c.P}-${i}${isDark() ? '-dark' : ''}.jpg`; img.alt = `3D view of ${c.p.name}. ${plain(steps[i].html)}`; };
+      if (hasBlock && !WEBGL) stills.add(() => still(stillAt));
       if (hasBlock && !WEBGL) {
         el.removeAttribute('role');
         el.classList.add('slc-block--still');
