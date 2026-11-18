@@ -120,6 +120,13 @@
       above mean sea level (published: ${fmt(d.low, 2)}${d.high > d.low ? `–${fmt(d.high, 2)}` : ''} ${esc(d.unit)} ${esc(d.datum)}).
       <span class="slc-src">(<a href="${esc(d.url)}">${esc(d.src)}</a>)</span>`;
     const defence = (c, id) => (c.p.defences || []).find((d) => d.id === id);
+    // Opening paragraph: who lives there and what the place is known for (content/slr/profile.csv, sourced).
+    const PROFILE = { jakarta: ['population', 'capital'], 'new-york': ['population', 'floodplain'], hamburg: ['population', 'port'],
+      mekong: ['province', 'rice'], khulna: ['population', 'sundarbans'], 'nile-delta': ['population', 'delta', 'sediment'],
+      louisiana: ['population', 'football-field'] };
+    const profile = (c) => { const f = (PROFILE[c.P] || []).map((id) => (c.p.profile || []).find((x) => x.id === id)).filter(Boolean);
+      return f.length ? `<p class="slc-profile">${f.map((x) => esc(x.text)).join(' ')} <span class="slc-src">(Sources:
+        ${f.map((x) => `<a href="${esc(x.url)}">${esc(x.src)}</a>`).join('; ')})</span></p>` : ''; };
 
     // az: the side the camera looks from (0 = from the south, 90 from the east, 180 from the north): from the sea.
     const CH = {
@@ -148,7 +155,7 @@
         },
         mechanism: (c) => `<p>${cite(imp(c.P, (i) => i.unit === 'mm/yr'))}</p><p>${cite(imp(c.P, (i) => i.unit === 'deaths'))}</p>` },
       hamburg: { az: 240, relative: false,
-        lede: () => `<p>Hamburg lies 100 km up the Elbe, yet the tide reaches it, and the river funnels it: high water is
+        lede: () => `<p>Hamburg lies far up the Elbe, yet the tide reaches it, and the river funnels it: high water is
           higher in the city than at the river’s mouth. Hamburg is the defended city.</p>`,
         defence: (c) => { const d = defence(c, 'defence_line');
           return `<p>${esc(d.name)}. ${crestLine(c, d)}</p><p>${cite(imp(c.P, (i) => i.unit === 'm NHN' && i.value > 8))}</p>`; },
@@ -180,7 +187,7 @@
           <p>${cite(imp(c.P, (i) => i.kind === 'salinisation'))}</p>` },
       'nile-delta': { az: 180, relative: true,
         lede: () => `<p>The Mediterranean barely has a tide. Yet the land behind Alexandria, around Lake Maryut, lies
-          below sea level, and the delta’s edge sinks and wears away now that the Nile’s sediment stops at the Aswan dam.</p>`,
+          below sea level, and the delta’s edge sinks and wears away now that the Nile’s sediment stops at the dam.</p>`,
         defence: (c) => `<p>${unconverted(defence(c, 'rosetta_seawall'))}</p><p>It holds the eroding river mouth in place; it
           does not protect the low land behind Alexandria, where most of the people below the line live.</p>`,
         mechanism: (c) => `<p>${cite(imp(c.P, (i) => i.unit === 'm/yr'))}</p><p>${cite(imp(c.P, (i) => i.kind === 'subsidence'))}</p><p>${cite(imp(c.P, (i) => i.unit === 'buildings'))}</p>` },
@@ -205,7 +212,7 @@
       const n = c.n, rel = cfg.relative;
       const steps = [
         { level: c.msl, show: ['ground'], when: 'mean sea level',
-          html: `<p class="slc-kicker">${n} · ${esc(THEME[c.P] || '')}</p><h2>${esc(c.p.name)}</h2>${cfg.lede(c)}${groundLine(c)}` },
+          html: `<p class="slc-kicker">${n} · ${esc(THEME[c.P] || '')}</p><h2>${esc(c.p.name)}</h2>${profile(c)}${cfg.lede(c)}${groundLine(c)}` },
         { level: c.tide, show: ['ground', 'tide'], when: 'high water today', html: tideLine(c) },
         { level: c.tide, show: ['ground', 'tide', 'crest'], when: 'high water today', html: cfg.defence(c) },
         { level: c.lvl(c.f50), show: ['ground', 'tide', 'crest', 'y2050'], when: '2050 · medium emissions',
@@ -231,7 +238,7 @@
       const wall = defence(c, 'ncicd_phase_a');
       return [
         { cam: { az: 200, el: 32, dist: 2.15, tx: 0, tz: 0 }, level: c.msl, show: ['ground'], when: 'mean sea level', t: 'none',
-          html: `<p class="slc-kicker">${c.n} · ${esc(THEME[c.P] || '')}</p><h2>${esc(c.p.name)}</h2>
+          html: `<p class="slc-kicker">${c.n} · ${esc(THEME[c.P] || '')}</p><h2>${esc(c.p.name)}</h2>${profile(c)}
             <p>Jakarta sits on a flat coastal plain on the Java Sea. Its northern districts are barely above the sea, and
             some are already below it.</p>${groundLine(c)}` },
         { cam: { az: 165, el: 28, dist: 1.2, tx: -3, tz: 3 }, level: c.tide, show: ['ground', 'tide'], when: 'high water today', t: 'none',

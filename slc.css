@@ -200,3 +200,9 @@
 .slc .slc-method ul { list-style: none; display: grid; gap: 0.5rem; font-size: var(--step--1); font-family: var(--font-support); }
 .slc .slc-method em { font-style: italic; }
 @container slc (max-width: 860px) { .slc .slc-method__cols { grid-template-columns: minmax(0, 1fr); } }
+
+/* Section headings end in a red dot, as the series title does (og.png, europes-divides). */
+.slc :is(.slc-head h1, .slc-compare h2, .slc-explore h2, .slc-method h2)::after {
+  content: ""; display: inline-block; width: 0.22em; height: 0.22em; margin-left: 0.08em;
+  border-radius: 50%; background: var(--red); vertical-align: baseline;
+}
