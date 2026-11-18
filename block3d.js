@@ -303,6 +303,38 @@
     overlay.innerHTML = '<svg class="b3d-stalks"></svg>';
     container.style.position = 'relative';
     container.appendChild(overlay);
+    // Scale bar and north arrow (bottom left), redrawn with every frame so they follow zoom and rotation.
+    const hud = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    hud.setAttribute('class', 'b3d-hud');
+    hud.setAttribute('role', 'img');
+    overlay.appendChild(hud);
+    const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3();
+    function screenOf(v, w, h) { v.project(camera); return [(v.x + 1) / 2 * w, (1 - v.y) / 2 * h]; }
+    function placeHud(w, h) {
+      // Ground distance per screen pixel at the centre of the view, measured along the screen's horizontal.
+      const right = tmpB.setFromMatrixColumn(camera.matrixWorld, 0).setY(0).normalize();
+      const y0 = groundY(target.x, target.z, true);
+      const c = screenOf(tmpA.set(target.x, y0, target.z), w, h);
+      const r = screenOf(tmpA.set(target.x + right.x, y0, target.z + right.z), w, h);
+      const pxPerKm = Math.hypot(r[0] - c[0], r[1] - c[1]);
+      // North: the screen direction of a step towards smaller z (the top edge of the bbox).
+      const nn = screenOf(tmpA.set(target.x, y0, target.z - 1), w, h);
+      const ang = Math.atan2(nn[0] - c[0], -(nn[1] - c[1])) * 180 / Math.PI;
+      if (!isFinite(pxPerKm) || pxPerKm <= 0) { hud.innerHTML = ''; return; }
+      const maxPx = Math.min(130, w * 0.28);
+      const nice = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100].filter((k) => k * pxPerKm <= maxPx).pop() || 0.1;
+      const len = nice * pxPerKm, R = 13, x0 = 8, cx = x0 + R, cy = 22, bx = cx + R + 14, by = cy + 4;
+      const lab = nice < 1 ? `${Math.round(nice * 1000)} m` : `${nice} km`;
+      const hw = Math.ceil(bx + Math.max(len, 40) + 8), hh = 44;
+      hud.setAttribute('width', hw);
+      hud.setAttribute('height', hh);
+      hud.setAttribute('aria-label', `North arrow and scale bar: ${lab} at the centre of the view`);
+      hud.innerHTML = `<rect class="b3d-hud-bg" width="${hw}" height="${hh}" rx="3"/>` +
+        `<g transform="translate(${cx},${cy}) rotate(${ang.toFixed(1)})"><circle class="b3d-hud-ring" r="${R}"/>` +
+        `<path class="b3d-hud-n" d="M0,${-R + 2}L5,4L0,1L-5,4Z"/><text class="b3d-hud-t" y="${-R - 3}" text-anchor="middle" transform="rotate(${(-ang).toFixed(1)},0,${-R - 7})">N</text></g>` +
+        `<path class="b3d-hud-bar" d="M${bx},${by - 5}V${by}H${(bx + len).toFixed(1)}V${by - 5}"/>` +
+        `<text class="b3d-hud-t" x="${bx}" y="${by - 9}">${lab}</text>`;
+    }
     let labels = [];
     function lonlatToXZ(lon, lat) {
       const [w, s, e, n] = meta.bbox;
@@ -393,6 +425,7 @@
         applyCamera();
         renderer.render(scene, camera);
         placeLabels(w, h);
+        placeHud(w, h);
       });
     }
     const tweens = {};
