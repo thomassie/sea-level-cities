@@ -1,0 +1,1 @@
+{"place": "majuro", "cols": 1280, "rows": 662, "bbox": [171.021, 7.015, 171.44, 7.23], "spill_cols": 4190, "spill_rows": 2150, "width_km": 46.283, "height_km": 23.773, "min_m": -2.31, "max_m": 11.22, "exaggeration": 60.0, "seafloor_clip_m": -3.0, "subsidence": null, "layers": ["roads", "names", "borders", "admin"]}

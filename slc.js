@@ -49,12 +49,10 @@
   // Through the first 60% of a step the water rises from the previous step's level to this step's level.
   const easeAt = (p) => { const k = Math.min(1, p / 0.6); return k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; };
   // What each place stands for in the story (docs/projects/sea-level-cities/chapters.md, agreed 18 Nov 2026).
-  const THEME = { jakarta: 'Subsidence', tuvalu: 'An atoll nation', 'new-york': 'Storms on a higher sea', hamburg: 'The defended city',
+  const THEME = { jakarta: 'Subsidence', majuro: 'An atoll capital', 'new-york': 'Storms on a higher sea', hamburg: 'The defended city',
     mekong: 'Salinisation', khulna: 'Cyclones and salt', 'nile-delta': 'Erosion', louisiana: 'Land loss' };
-  // Places without a chapter for now, but kept in the comparison row (staff only). Tuvalu: the 2019 national lidar is
-  // shared only on request by the Government of Tuvalu, and the free global terrain models cannot resolve the islets
-  // (notes/data-checks.md). Remove it from this set when the terrain data arrive.
-  const NO_CHAPTER = new Set(['tuvalu']);
+  // Places without a chapter, kept in the comparison row (staff only). None at present.
+  const NO_CHAPTER = new Set([]);
   const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
 
   Promise.all(['places', 'scenarios', 'units', 'exposure', 'overview', 'overview_facts'].map((f) => d3.json(`${base}data/${f}.json`))).then(([places, scen, units, expo, overview, ofacts]) => {
@@ -66,7 +64,7 @@
     // People on land below the high-tide line, rounded so the text does not claim false precision.
     const people = (v) => (v == null ? '–' : fmt(v >= 100000 ? Math.round(v / 10000) * 10000 : v >= 10000 ? Math.round(v / 1000) * 1000 : Math.round(v / 100) * 100));
     const likely = (r) => (r && r.pl != null ? ` (likely ${people(r.pl)} to ${people(r.ph)})` : '');
-    const km2 = (v) => fmt(v);
+    const km2 = (v) => (v != null && v < 10 ? fmt(v, 1) : fmt(v));   // small areas (Majuro) need a decimal
     const metres = (v) => fmt(Math.abs(v), 2);
     // "1.23 m above" / "0.40 m below" mean sea level
     const vsMsl = (v) => `${metres(v)} m ${v < 0 ? 'below' : 'above'}`;
@@ -81,7 +79,7 @@
       const p = byId.get(P), msl = p.msl_m, base0 = msl + p.mhhw_m;    // high water on the projections' 1995–2014 sea
       const t = row(P, 'today'), f50 = row(P, 'ssp245', 2050), f100 = row(P, 'ssp245', 2100), x100 = row(P, 'ssp585', 2100);
       const modelled = t.wl != null;
-      // Not modelled (Tuvalu): the rise to today is interpolated from 0 in 2005 (the baseline's centre) to the 2030 median.
+      // Not modelled: the rise to today is interpolated from 0 in 2005 (the baseline's centre) to the 2030 median.
       const r30 = row(P, 'ssp245', 2030).r;
       const tide = modelled ? t.wl : base0 + (r30 * (YEAR - 2005)) / 25;
       const rToday = tide - base0;
@@ -121,7 +119,7 @@
       <span class="slc-src">(<a href="${esc(d.url)}">${esc(d.src)}</a>)</span>`;
     const defence = (c, id) => (c.p.defences || []).find((d) => d.id === id);
     // Opening paragraph: who lives there and what the place is known for (content/slr/profile.csv, sourced).
-    const PROFILE = { jakarta: ['population', 'capital'], 'new-york': ['population', 'floodplain'], hamburg: ['population', 'port'],
+    const PROFILE = { jakarta: ['population', 'capital'], majuro: ['population', 'median-height'], 'new-york': ['population', 'floodplain'], hamburg: ['population', 'port'],
       mekong: ['province', 'rice'], khulna: ['population', 'sundarbans'], 'nile-delta': ['population', 'delta', 'sediment'],
       louisiana: ['population', 'football-field'] };
     const profile = (c) => { const f = (PROFILE[c.P] || []).map((id) => (c.p.profile || []).find((x) => x.id === id)).filter(Boolean);
@@ -199,13 +197,19 @@
             <p>Outside the rings, the marsh and the fishing camps have no levee at all.</p>`; },
         mechanism: (c) => `<p>${cite(imp(c.P, (i) => i.unit === 'km²'))}</p><p>${cite(imp(c.P, (i) => i.kind === 'subsidence'))}</p>
           <p>Isle de Jean Charles: ${cite(imp(c.P, (i) => i.unit === 'acres remaining'))} ${cite(imp(c.P, (i) => i.kind === 'relocation'))}</p>` },
-      tuvalu: { relative: false,
-        lede: () => `<p>Funafuti is a ring of coral islets around a lagoon, a few hundred metres wide at most. There is no
-          high ground to retreat to. This chapter has no map: the free global terrain models cannot resolve islets this
-          narrow, and the detailed lidar survey is not publicly available.</p>`,
-        defence: (c) => { const d = defence(c, 'tcap_platform');
-          return `<p>${cite(imp(c.P, (i) => i.unit === 'ha'))}</p><p>${esc(d.name)}. ${crestLine(c, d)}</p>`; },
-        mechanism: (c) => `<p>${cite(imp(c.P, (i) => i.kind === 'land_loss'))}</p><p>${cite(imp(c.P, (i) => i.kind === 'relocation'))}</p>` },
+      // Majuro: the atoll is 46 km across, its land a thin ring; the steps zoom in on the capital's islets in the east
+      // (world units are km from the block's centre, +x east, +z south).
+      majuro: { az: 20, relative: false,
+        cams: [{ az: 15, el: 40, dist: 2.1, tx: 0, tz: 0 }, { az: 25, el: 55, dist: 0.3, tx: 16, tz: 2.5 },
+          { az: 10, el: 55, dist: 0.26, tx: 16.5, tz: 3 }, { az: 35, el: 55, dist: 0.32, tx: 16, tz: 2.5 },
+          { az: 30, el: 55, dist: 0.5, tx: 13, tz: 3 }, { az: 15, el: 45, dist: 2.1, tx: 0, tz: 0 }],
+        lede: () => `<p>Majuro is a ring of coral islets around a lagoon, most of them a few hundred metres wide. There is
+          no high ground to retreat to: on the capital’s islets in the east, the lagoon and the open ocean lie a short walk
+          apart.</p>`,
+        defence: () => `<p>Sea walls guard stretches of the capital’s shore, but we found no documented crest heights for
+          them, so the staff does not show one.</p>`,
+        mechanism: (c) => `<p>${cite(imp(c.P, (i) => i.unit === 'km² of land'))}</p><p>${cite(imp(c.P, (i) => i.unit === 'households'))}</p>
+          <p>${cite(imp(c.P, (i) => i.unit === '% of urban land'))}</p>` },
     };
 
     function genericSteps(c, cfg) {
@@ -220,6 +224,7 @@
         { level: c.lvl(c.f100), show: ['ground', 'tide', 'crest', 'y2050', 'y2100'], when: '2100 · medium emissions',
           html: `<p>${rising(c, 2100, c.f100, rel)}${below(c.f100)}${extremeLine(c, rel)}</p>` },
       ];
+      if (cfg.cams) steps.forEach((s, i) => { s.cam = cfg.cams[Math.min(i, cfg.cams.length - 1)]; });
       const extra = cfg.extra ? cfg.extra(c) : [];
       extra.forEach((s) => { s.show = [...steps[steps.length - 1].show, ...s.show]; });
       steps.push(...extra);
@@ -292,7 +297,7 @@
         <p class="slc-dek">Where the sea already stands against the land, and how much higher it will stand.</p>
 </header>`}
       <nav class="slc-nav" id="slc-nav" aria-label="On this page">
-        <a href="#slc-overview">The world</a><a href="#slc-places">Seven places</a><a href="#slc-compare-h">All staffs side by side</a><a href="#slc-explore-h">Look up a spot</a><a href="#slc-method-h">Sources and method</a>
+        <a href="#slc-overview">The world</a><a href="#slc-places"><span class="slc-nplaces-cap"></span> places</a><a href="#slc-compare-h">All staffs side by side</a><a href="#slc-explore-h">Look up a spot</a><a href="#slc-method-h">Sources and method</a>
       </nav>
       <section class="slc-overview" id="slc-overview" aria-labelledby="slc-overview-h">
         <h2 id="slc-overview-h">Below the high-tide line</h2>
@@ -307,19 +312,16 @@
         <p class="slc-overview__context"></p>
       </section>
       <section class="slc-places" id="slc-places" aria-labelledby="slc-places-h">
-        <h2 id="slc-places-h">Seven places, seven ways the sea gets in</h2>
+        <h2 id="slc-places-h"><span class="slc-nplaces-cap"></span> places, <span class="slc-nplaces"></span> ways the sea gets in</h2>
         <p class="slc-places__lead" aria-live="polite"></p>
         <ul class="slc-places__list"></ul>
-        <p class="slc-places__cta"><a href="#slc-explore-h">Look up a spot</a>: pick one of the seven places, zoom in, tap a street or use your location, and see whether high water would reach it.</p>
+        <p class="slc-places__cta"><a href="#slc-explore-h">Look up a spot</a>: pick one of the <span class="slc-nplaces"></span> places, zoom in, tap a street or use your location, and see whether high water would reach it.</p>
         <p class="slc-overview__note"></p>
       </section>
       <section class="slc-compare" aria-labelledby="slc-compare-h">
-        <h2 id="slc-compare-h">The same sea, eight shores</h2>
+        <h2 id="slc-compare-h">The same sea, <span class="slc-nshores"></span> shores</h2>
         <p class="slc-compare__dek">All the staffs side by side, each with its zero at its own mean sea level. The water
           stands where high water would be in 2100 with <span class="slc-compare__scen">medium emissions</span> (the emissions switch at the top).</p>
-        <p class="slc-compare__dek">Funafuti, the capital atoll of Tuvalu, has no chapter yet: its detailed terrain survey
-          is not public, and the free global terrain models cannot resolve islets a few hundred metres wide. Its staff
-          needs no map: the typical ground of the islets <span class="slc-compare__tuvalu"></span>.</p>
         <div class="slc-compare__row"></div>
         <p class="slc-note slc-compare__note"></p>
       </section>
@@ -511,10 +513,6 @@
       const rowEl = root.querySelector('.slc-compare__row');
       rowEl.innerHTML = '';
       root.querySelector('.slc-compare__scen').textContent = SCEN[ssp];
-      const tv = MODELS.get('tuvalu'), tr = tv && row('tuvalu', ssp, 2100);   // Funafuti's sentence follows the scenario too
-      root.querySelector('.slc-compare__tuvalu').textContent = !tv || tv.ground == null || tr.r == null ? '' : (() => {
-        const g = tv.ab(tv.ground), w = tv.ab(tv.lvl(tr));
-        return `(${metres(g)} m) lies ${g < w ? 'below' : 'above'} where high water would stand in 2100 with ${SCEN[ssp]} (${metres(w)} m)`; })();
       const KEYS = ['ground', 'tide', 'crest'];
       const picks = places.map((p) => MODELS.get(p.place_id)).map((c) => {
         const r = row(c.P, ssp, 2100);   // the chosen scenario's 2100 mark replaces the chapters' medium one
@@ -542,7 +540,7 @@
       root.querySelector('.slc-compare__note').textContent = off.length ? `Above the top of the scale: ${off.join('; ')}.` : '';
     }
 
-    // ---------- overview: the world first (Kulp & Strauss), then the seven places as examples ----------
+    // ---------- overview: the world first (Kulp & Strauss), then the mapped places as examples ----------
     (function overviewSection() {
       const sec = root.querySelector('.slc-overview'), seg = sec.querySelector('.slc-tabs'), pl = root.querySelector('.slc-places');
       const SSPS = ['ssp126', 'ssp245', 'ssp585'], LABEL = { ssp126: 'Low emissions', ssp245: 'Medium emissions', ssp585: 'Very high emissions' };
@@ -561,8 +559,13 @@
         land kept dry by dikes, walls and pumps, or not kept dry at all. ${src(glob)}`;
       sec.querySelector('.slc-overview__context').innerHTML = `Both figures count people where they lived in 2010 and do not
         consider defences; the study used the earlier RCP scenarios with the same end-of-century forcing. ${commit ? `${esc(commit.text)} ${src(commit, ', B.5.4')}` : ''}`;
-      // The seven places: why each is a good example, with a link to its 3D view.
+      // The mapped places: why each is a good example, with a link to its 3D view. Their number, in words, in the headings.
+      const nMapped = chapters.filter(({ hasBlock }) => hasBlock).length, nShores = places.length;
+      root.querySelectorAll('.slc-nplaces').forEach((e) => { e.textContent = word(nMapped); });
+      root.querySelectorAll('.slc-nplaces-cap').forEach((e) => { e.textContent = word(nMapped).replace(/^./, (x) => x.toUpperCase()); });
+      root.querySelectorAll('.slc-nshores').forEach((e) => { e.textContent = word(nShores); });
       const WHY = {
+        majuro: 'The capital of an atoll nation, on a thin ring of coral islets with no high ground: king tides and ocean swells already flood parts of the capital.',
         jakarta: 'A capital that sinks faster than the sea rises: decades of groundwater pumping have lowered the north so far that parts already lie below the sea. It shows how a local cause adds to climate change.',
         'new-york': 'A rich city with little land below the daily tide. Its danger is the storm on top of a higher sea, as Hurricane Sandy showed in 2012.',
         hamburg: 'The defended city: far up the Elbe, yet reached by the tide. Since the deadly flood of 1962 it has relied on dikes and walls, which are now being raised again.',
@@ -575,11 +578,11 @@
         <a class="slc-places__name" href="#slc-ch-${c.P}">${esc(c.p.name.split(/[:,]| and the /)[0])}</a>
         <span class="slc-places__kind">${esc(THEME[c.P] || '')}</span> ${esc(WHY[c.P] || '')}
         <a class="slc-places__go" href="#slc-ch-${c.P}">3D view ↓</a></li>`).join('');
-      pl.querySelector('.slc-overview__note').textContent = `How the figures for the seven places are made: central estimates
+      pl.querySelector('.slc-overview__note').textContent = `How the figures for the ${word(nMapped)} places are made: central estimates
         from the same model as the chapters. People are counted where they live today (GHS-POP 2025). The ground sinks no
         further after today; where it keeps sinking, as in Jakarta, more land would fall below the line. Outside Jakarta the
-        terrain dates from about 2011–2015, so land that has sunk since lies lower than the model says: if anything, the
-        figures are too low. Defences are not modelled. Funafuti, Tuvalu, has no map and is not included.`;
+        terrain dates from about 2011–2016, so land that has sunk since lies lower than the model says: if anything, the
+        figures are too low. Defences are not modelled.`;
       let cur = 'ssp245';
       const draw = () => {
         const g = fact(cur, 'people_below_high_tide_2100'), r = o(cur, 2100);
