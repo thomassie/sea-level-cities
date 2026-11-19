@@ -198,11 +198,11 @@
         mechanism: (c) => `<p>${cite(imp(c.P, (i) => i.unit === 'km²'))}</p><p>${cite(imp(c.P, (i) => i.kind === 'subsidence'))}</p>
           <p>Isle de Jean Charles: ${cite(imp(c.P, (i) => i.unit === 'acres remaining'))} ${cite(imp(c.P, (i) => i.kind === 'relocation'))}</p>` },
       // Majuro: the atoll is 46 km across, its land a thin ring; the steps zoom in on the capital's islets in the east
-      // (world units are km from the block's centre, +x east, +z south).
+      // (view targets in km from the block's centre, tx east, tz north: Delap-Uliga-Djarrit at about 16.5, -3.6).
       majuro: { az: 20, relative: false,
-        cams: [{ az: 15, el: 40, dist: 2.1, tx: 0, tz: 0 }, { az: 25, el: 55, dist: 0.3, tx: 16, tz: 2.5 },
-          { az: 10, el: 55, dist: 0.26, tx: 16.5, tz: 3 }, { az: 35, el: 55, dist: 0.32, tx: 16, tz: 2.5 },
-          { az: 30, el: 55, dist: 0.5, tx: 13, tz: 3 }, { az: 15, el: 45, dist: 2.1, tx: 0, tz: 0 }],
+        cams: [{ az: 15, el: 40, dist: 2.1, tx: 0, tz: 0 }, { az: 25, el: 55, dist: 0.3, tx: 16, tz: -2.5 },
+          { az: 10, el: 55, dist: 0.26, tx: 16.3, tz: -3.2 }, { az: 35, el: 55, dist: 0.32, tx: 16, tz: -2.5 },
+          { az: 30, el: 55, dist: 0.45, tx: 13, tz: -4.2 }, { az: 15, el: 45, dist: 2.1, tx: 0, tz: 0 }],
         lede: () => `<p>Majuro is a ring of coral islets around a lagoon, most of them a few hundred metres wide. There is
           no high ground to retreat to: on the capital’s islets in the east, the lagoon and the open ocean lie a short walk
           apart.</p>`,
