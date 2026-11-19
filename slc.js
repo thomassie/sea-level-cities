@@ -291,7 +291,7 @@
         <h1>Sea-level Cities</h1>
         <p class="slc-dek">Where the sea already stands against the land, and how much higher it will stand.</p>
 </header>`}
-      <nav class="slc-nav" aria-label="On this page">
+      <nav class="slc-nav" id="slc-nav" aria-label="On this page">
         <a href="#slc-overview">The world</a><a href="#slc-places">Seven places</a><a href="#slc-compare-h">All staffs side by side</a><a href="#slc-explore-h">Look up a spot</a><a href="#slc-method-h">Sources and method</a>
       </nav>
       <section class="slc-overview" id="slc-overview" aria-labelledby="slc-overview-h">
@@ -333,6 +333,7 @@
       </section>
       ${chapters.map(({ c, steps, hasBlock }) => `
       <section class="story slc-chapter" id="slc-ch-${c.P}" data-place="${c.P}" aria-label="${esc(c.p.name)}">
+        <a class="slc-top" href="#slc-nav" aria-label="Back to the top of the page">↑ Top</a>
         <div class="story__graphic"><figure>
           <div class="slc-graphic${hasBlock ? '' : ' slc-graphic--staff'}">
             ${hasBlock ? `<div class="slc-block" id="slc-block-${c.P}" role="img" aria-label="3D block of ${esc(c.p.name)}"></div>` : ''}
@@ -344,6 +345,7 @@
         <div class="story__steps">${steps.map((s, i) => `<div class="step" data-i="${i}"><div class="step__text">${s.html}</div></div>`).join('')}</div>
       </section>`).join('')}
       <section class="slc-explore" aria-labelledby="slc-explore-h">
+        <a class="slc-top" href="#slc-nav" aria-label="Back to the top of the page">↑ Top</a>
         <h2 id="slc-explore-h">Look up a spot</h2>
         <p class="slc-explore__dek">Choose a place, zoom in and tap a spot, or use your location, to see whether the sea
           would reach it at high tide in the IPCC’s projections.</p>
