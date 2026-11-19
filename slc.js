@@ -310,7 +310,18 @@
         <h2 id="slc-places-h">Seven places, seven ways the sea gets in</h2>
         <p class="slc-places__lead" aria-live="polite"></p>
         <ul class="slc-places__list"></ul>
+        <p class="slc-places__cta"><a href="#slc-explore-h">Look up a spot</a>: pick one of the seven places, zoom in, tap a street or use your location, and see whether high water would reach it.</p>
         <p class="slc-overview__note"></p>
+      </section>
+      <section class="slc-compare" aria-labelledby="slc-compare-h">
+        <h2 id="slc-compare-h">The same sea, eight shores</h2>
+        <p class="slc-compare__dek">All the staffs side by side, each with its zero at its own mean sea level. The water
+          stands where high water would be in 2100 with <span class="slc-compare__scen">medium emissions</span> (the emissions switch at the top).</p>
+        <p class="slc-compare__dek">Funafuti, the capital atoll of Tuvalu, has no chapter yet: its detailed terrain survey
+          is not public, and the free global terrain models cannot resolve islets a few hundred metres wide. Its staff
+          needs no map: the typical ground of the islets <span class="slc-compare__tuvalu"></span>.</p>
+        <div class="slc-compare__row"></div>
+        <p class="slc-note slc-compare__note"></p>
       </section>
       <section class="slc-intro">
         <p>Each chapter reads the water off one ruler: a <strong>gauge staff</strong>, like the ones on harbour walls,
@@ -332,16 +343,6 @@
         </figure></div>
         <div class="story__steps">${steps.map((s, i) => `<div class="step" data-i="${i}"><div class="step__text">${s.html}</div></div>`).join('')}</div>
       </section>`).join('')}
-      <section class="slc-compare" aria-labelledby="slc-compare-h">
-        <h2 id="slc-compare-h">The same sea, eight shores</h2>
-        <p class="slc-compare__dek">All the staffs side by side, each with its zero at its own mean sea level. The water
-          stands where high water would be in 2100 with <span class="slc-compare__scen">medium emissions</span> (the switch above).</p>
-        <p class="slc-compare__dek">Funafuti, the capital atoll of Tuvalu, has no chapter yet: its detailed terrain survey
-          is not public, and the free global terrain models cannot resolve islets a few hundred metres wide. Its staff
-          needs no map: the typical ground of the islets <span class="slc-compare__tuvalu"></span>.</p>
-        <div class="slc-compare__row"></div>
-        <p class="slc-note slc-compare__note"></p>
-      </section>
       <section class="slc-explore" aria-labelledby="slc-explore-h">
         <h2 id="slc-explore-h">Look up a spot</h2>
         <p class="slc-explore__dek">Choose a place, zoom in and tap a spot, or use your location, to see whether the sea
@@ -365,18 +366,19 @@
             <label class="slc-pick">Place
               <select id="slc-place">${chapters.filter((x) => x.hasBlock).map(({ c }) => `<option value="${c.P}">${esc(c.p.name)}</option>`).join('')}</select>
             </label>
-            <div class="slc-seg" role="group" aria-label="Year" data-k="year">
-              <button type="button" data-v="today">Today</button><button type="button" data-v="2050">2050</button><button type="button" data-v="2100">2100</button>
-            </div>
-            <div class="slc-seg" role="group" aria-label="Emissions" data-k="ssp">
-              <button type="button" data-v="ssp126">Low</button><button type="button" data-v="ssp245">Medium</button><button type="button" data-v="ssp585">Very high</button>
-            </div>
-            <p class="slc-note slc-seg-note">Emissions</p>
-            <div class="slc-ground">
-              <div class="slc-seg" role="group" aria-label="Ground" data-k="ground">
+            <div class="slc-field"><p class="slc-field__label" id="slc-l-year">Year</p>
+              <div class="slc-seg" role="group" aria-labelledby="slc-l-year" data-k="year">
+                <button type="button" data-v="today">Today</button><button type="button" data-v="2050">2050</button><button type="button" data-v="2100">2100</button>
+              </div></div>
+            <div class="slc-field"><p class="slc-field__label" id="slc-l-ssp">Emissions</p>
+              <div class="slc-seg" role="group" aria-labelledby="slc-l-ssp" data-k="ssp">
+                <button type="button" data-v="ssp126">Low</button><button type="button" data-v="ssp245">Medium</button><button type="button" data-v="ssp585">Very high</button>
+              </div></div>
+            <div class="slc-field slc-ground"><p class="slc-field__label" id="slc-l-ground">Ground (sinking is modelled for Jakarta only)</p>
+              <div class="slc-seg" role="group" aria-labelledby="slc-l-ground" data-k="ground">
                 <button type="button" data-v="sink">Keeps sinking</button><button type="button" data-v="none">Stops sinking today</button>
               </div>
-              <p class="slc-note slc-seg-note">Ground: sinking slows, halving every 30 years</p>
+              <p class="slc-note">Keeps sinking: the sinking slows, halving every 30 years.</p>
             </div>
             <form class="slc-search" role="search">
               <label for="slc-q">Find a neighbourhood</label>

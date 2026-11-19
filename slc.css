@@ -90,7 +90,9 @@
 .slc .slc-seg button:first-child { border-left: 0; }
 .slc .slc-seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
 .slc .slc-seg.is-off { opacity: 0.35; pointer-events: none; }
-.slc .slc-seg-note { margin: -0.4rem 0 0.4rem; }
+.slc .slc-field { display: grid; gap: 0.25rem; }
+.slc .slc-field__label { color: var(--muted); }
+.slc .slc-field .slc-note { margin: 0.1rem 0 0; }
 .slc .slc-locate { justify-self: start; padding: 0.45rem 0.8rem; border: 1px solid var(--ink); border-radius: 4px;
   background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; }
 .slc .slc-locate:hover, .slc .slc-zoom button:focus-visible, .slc .slc-seg button:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
@@ -164,7 +166,7 @@
 .slc .slc-graphic--staff .slc-staffbox .slc-staff { height: min(53vh, 490px); }
 
 /* ---------- Close: all staffs side by side ---------- */
-.slc .slc-compare { padding-block: 3rem 2rem; border-top: 1px solid var(--rule); }
+.slc .slc-compare { padding-block: 1rem 2rem; }
 .slc .slc-compare h2 { font-size: var(--step-2); line-height: 1.15; margin: 0 0 0.5rem; }
 .slc .slc-compare__dek { max-width: 40rem; color: var(--muted); margin: 0 0 1.25rem; }
 .slc .slc-compare__row { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1.25rem 0.5rem; }
@@ -253,3 +255,6 @@
 .slc .slc-places__name:hover { text-decoration: underline; }
 .slc .slc-places__kind { display: block; font-family: var(--font-support); font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.25rem; }
 .slc .slc-places__go { display: inline-block; margin-top: 0.25rem; font-family: var(--font-support); font-size: 0.875rem; }
+.slc .slc-places__cta { font-size: var(--step-0); max-width: 46rem; }
+.slc .slc-places__cta a { font-weight: 600; }
+.slc .slc-compare { margin-bottom: 2rem; border-bottom: 1px solid var(--rule); }
