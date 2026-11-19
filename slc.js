@@ -57,7 +57,7 @@
   const NO_CHAPTER = new Set(['tuvalu']);
   const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
 
-  Promise.all(['places', 'scenarios', 'units', 'exposure'].map((f) => d3.json(`${base}data/${f}.json`))).then(([places, scen, units, expo]) => {
+  Promise.all(['places', 'scenarios', 'units', 'exposure', 'overview', 'overview_facts'].map((f) => d3.json(`${base}data/${f}.json`))).then(([places, scen, units, expo, overview, ofacts]) => {
     places.sort((a, b) => a.chapter_order - b.chapter_order);
     const byId = new Map(places.map((p) => [p.place_id, p]));
     const row = (P, s, y, sub = 'none', w = 'high_tide') =>
@@ -291,6 +291,27 @@
         <h1>Sea-level Cities</h1>
         <p class="slc-dek">Where the sea already stands against the land, and how much higher it will stand.</p>
 </header>`}
+      <nav class="slc-nav" aria-label="On this page">
+        <a href="#slc-overview">The world</a><a href="#slc-places">Seven places</a><a href="#slc-compare-h">All staffs side by side</a><a href="#slc-explore-h">Look up a spot</a><a href="#slc-method-h">Sources and method</a>
+      </nav>
+      <section class="slc-overview" id="slc-overview" aria-labelledby="slc-overview-h">
+        <h2 id="slc-overview-h">Below the high-tide line</h2>
+        <div class="slc-tabs" role="group" aria-label="Emissions scenario"></div>
+        <p class="slc-overview__scen" aria-live="polite"></p>
+        <div class="slc-hero">
+          <div class="slc-hero__item"><p class="slc-hero__label"><i class="slc-sw slc-sw--blue"></i>Worldwide today</p>
+            <p class="slc-hero__figure" id="slc-hero-today"></p><p class="slc-hero__text" id="slc-hero-today-text"></p></div>
+          <div class="slc-hero__item"><p class="slc-hero__label"><i class="slc-sw slc-sw--red"></i>Worldwide by 2100</p>
+            <p class="slc-hero__figure" id="slc-hero-2100" aria-live="polite"></p><p class="slc-hero__text" id="slc-hero-2100-text"></p></div>
+        </div>
+        <p class="slc-overview__context"></p>
+      </section>
+      <section class="slc-places" id="slc-places" aria-labelledby="slc-places-h">
+        <h2 id="slc-places-h">Seven places, seven ways the sea gets in</h2>
+        <p class="slc-places__lead" aria-live="polite"></p>
+        <ul class="slc-places__list"></ul>
+        <p class="slc-overview__note"></p>
+      </section>
       <section class="slc-intro">
         <p>Each chapter reads the water off one ruler: a <strong>gauge staff</strong>, like the ones on harbour walls,
           with its zero at the place’s own mean sea level. On it: the typical height of the ground, where high water
@@ -314,13 +335,10 @@
       <section class="slc-compare" aria-labelledby="slc-compare-h">
         <h2 id="slc-compare-h">The same sea, eight shores</h2>
         <p class="slc-compare__dek">All the staffs side by side, each with its zero at its own mean sea level. The water
-          stands where high water would be in 2100 with medium emissions.</p>
+          stands where high water would be in 2100 with <span class="slc-compare__scen">medium emissions</span> (the switch above).</p>
         <p class="slc-compare__dek">Funafuti, the capital atoll of Tuvalu, has no chapter yet: its detailed terrain survey
           is not public, and the free global terrain models cannot resolve islets a few hundred metres wide. Its staff
-          needs no map: the typical ground of the islets
-          ${(() => { const c = MODELS.get('tuvalu'); if (!c || c.ground == null) return '';
-            const g = c.ab(c.ground), w = c.ab(c.lvl(c.f100));
-            return `(${metres(g)} m) lies ${g < w ? 'below' : 'above'} where high water would stand in 2100 (${metres(w)} m)`; })()}.</p>
+          needs no map: the typical ground of the islets <span class="slc-compare__tuvalu"></span>.</p>
         <div class="slc-compare__row"></div>
         <p class="slc-note slc-compare__note"></p>
       </section>
@@ -485,17 +503,27 @@
     chapters.forEach(runChapter);
 
     // ---------- close: all staffs side by side, aligned on mean sea level ----------
-    (function compare() {
+    function compare(ssp) {
       const rowEl = root.querySelector('.slc-compare__row');
-      const KEYS = ['ground', 'tide', 'crest', 'y2100'];
-      const picks = places.map((p) => MODELS.get(p.place_id)).map((c) => ({ c, marks: c.marks.filter((k) => KEYS.includes(k.key)) }));
+      rowEl.innerHTML = '';
+      root.querySelector('.slc-compare__scen').textContent = SCEN[ssp];
+      const tv = MODELS.get('tuvalu'), tr = tv && row('tuvalu', ssp, 2100);   // Funafuti's sentence follows the scenario too
+      root.querySelector('.slc-compare__tuvalu').textContent = !tv || tv.ground == null || tr.r == null ? '' : (() => {
+        const g = tv.ab(tv.ground), w = tv.ab(tv.lvl(tr));
+        return `(${metres(g)} m) lies ${g < w ? 'below' : 'above'} where high water would stand in 2100 with ${SCEN[ssp]} (${metres(w)} m)`; })();
+      const KEYS = ['ground', 'tide', 'crest'];
+      const picks = places.map((p) => MODELS.get(p.place_id)).map((c) => {
+        const r = row(c.P, ssp, 2100);   // the chosen scenario's 2100 mark replaces the chapters' medium one
+        const y = r.r == null ? [] : [{ key: 'y2100', text: '2100', m: c.lvl(r), tone: 'future', range: [c.base0 + r.rl, c.base0 + r.rh] }];
+        return { c, r, marks: [...c.marks.filter((k) => KEYS.includes(k.key)), ...y] };
+      });
       const rel = picks.flatMap(({ c, marks }) => marks.filter((k) => k.key !== 'crest').flatMap((k) => [k.m, ...(k.range || [])].map((v) => v - c.msl)));
       const LO = Math.floor(Math.min(...rel) - 0.3), HI0 = Math.ceil(Math.max(...rel) + 0.5);
       // Crests up to twice the scale's height widen it; taller ones (Hamburg's dikes) are listed below the row instead.
       const crests = picks.flatMap(({ c, marks }) => marks.filter((k) => k.key === 'crest').map((k) => (k.range ? k.range[1] : k.m) - c.msl));
       const HI = Math.ceil(Math.max(HI0, ...crests.filter((v) => v <= 2 * HI0)) + 0.2);
       const off = [];
-      picks.forEach(({ c, marks }) => {
+      picks.forEach(({ c, r, marks }) => {
         const keep = marks.filter((k) => (k.range ? k.range[1] : k.m) - c.msl <= HI);
         marks.filter((k) => !keep.includes(k)).forEach((k) => off.push(`${c.p.name.split(/[:,]| and the /)[0]}: ${k.key === 'crest' ? 'defence crest' : k.text}
           ${k.range ? `${metres(k.range[0] - c.msl)}–${metres(k.range[1] - c.msl)}` : metres(k.m - c.msl)} m`));
@@ -505,9 +533,73 @@
         rowEl.appendChild(cell);
         const s = FCC.slcStaff(cell, { msl: c.msl, marks: keep, min: c.msl + LO, max: c.msl + HI });
         s.show(keep.map((k) => k.key));
-        s.level(c.lvl(c.f100), 0);
+        s.level(r.r == null ? c.tide : c.lvl(r), 0);
       });
       root.querySelector('.slc-compare__note').textContent = off.length ? `Above the top of the scale: ${off.join('; ')}.` : '';
+    }
+
+    // ---------- overview: the world first (Kulp & Strauss), then the seven places as examples ----------
+    (function overviewSection() {
+      const sec = root.querySelector('.slc-overview'), seg = sec.querySelector('.slc-tabs'), pl = root.querySelector('.slc-places');
+      const SSPS = ['ssp126', 'ssp245', 'ssp585'], LABEL = { ssp126: 'Low emissions', ssp245: 'Medium emissions', ssp585: 'Very high emissions' };
+      const CODE = { ssp126: 'SSP1-2.6', ssp245: 'SSP2-4.5', ssp585: 'SSP5-8.5' }, RCP = { ssp126: 'RCP2.6', ssp245: 'RCP4.5', ssp585: 'RCP8.5' };
+      const o = (s, y) => overview.find((r) => r.scenario === s && r.year === y);
+      const fact = (s, m) => ofacts.find((f) => f.scenario === s && f.measure === m);
+      const src = (f, extra = '') => `<span class="slc-src">(<a href="${esc(f.url)}">${esc(f.src)}${extra}</a>)</span>`;
+      const WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+      const word = (n) => WORDS[n] || fmt(n);
+      const mio = (v) => fmt(Math.round(v / 1e5) / 10, 1);
+      const glob = ofacts.find((f) => f.measure === 'people_below_high_tide'), commit = ofacts.find((f) => f.measure === 'commitment');
+      const base = o('ssp245', 2100);
+      if (!glob || !base) { sec.hidden = true; pl.hidden = true; compare('ssp245'); return; }
+      sec.querySelector('#slc-hero-today').innerHTML = `${fmt(glob.value / 1e6)}<small> million</small>`;
+      sec.querySelector('#slc-hero-today-text').innerHTML = `people live on land that already lies below the high-tide line:
+        land kept dry by dikes, walls and pumps, or not kept dry at all. ${src(glob)}`;
+      sec.querySelector('.slc-overview__context').innerHTML = `Both figures count people where they lived in 2010 and do not
+        consider defences; the study used the earlier RCP scenarios with the same end-of-century forcing. ${commit ? `${esc(commit.text)} ${src(commit, ', B.5.4')}` : ''}`;
+      // The seven places: why each is a good example, with a link to its 3D view.
+      const WHY = {
+        jakarta: 'A capital that sinks faster than the sea rises: decades of groundwater pumping have lowered the north so far that parts already lie below the sea. It shows how a local cause adds to climate change.',
+        'new-york': 'A rich city with little land below the daily tide. Its danger is the storm on top of a higher sea, as Hurricane Sandy showed in 2012.',
+        hamburg: 'The defended city: far up the Elbe, yet reached by the tide. Since the deadly flood of 1962 it has relied on dikes and walls, which are now being raised again.',
+        mekong: 'Viet Nam’s rice bowl, so low and flat that the ordinary high tide already stands above much of the land, while salt water pushes up the river arms.',
+        khulna: 'Islands ringed by embankments beside the Sundarbans mangroves, where cyclones break the walls and salt water spoils the fields.',
+        'nile-delta': 'Egypt’s farmland and its second city on a delta that sinks and wears away, since the Aswan dam stopped the sediment that built it.',
+        louisiana: 'A coast that has lost about a quarter of its land since 1932 as it sinks and erodes; one island community has already been moved inland.',
+      };
+      pl.querySelector('.slc-places__list').innerHTML = chapters.filter(({ hasBlock }) => hasBlock).map(({ c }) => `<li>
+        <a class="slc-places__name" href="#slc-ch-${c.P}">${esc(c.p.name.split(/[:,]| and the /)[0])}</a>
+        <span class="slc-places__kind">${esc(THEME[c.P] || '')}</span> ${esc(WHY[c.P] || '')}
+        <a class="slc-places__go" href="#slc-ch-${c.P}">3D view ↓</a></li>`).join('');
+      pl.querySelector('.slc-overview__note').textContent = `How the figures for the seven places are made: central estimates
+        from the same model as the chapters. People are counted where they live today (GHS-POP 2025). The ground sinks no
+        further after today; where it keeps sinking, as in Jakarta, more land would fall below the line. Outside Jakarta the
+        terrain dates from about 2011–2015, so land that has sunk since lies lower than the model says: if anything, the
+        figures are too low. Defences are not modelled. Funafuti, Tuvalu, has no map and is not included.`;
+      let cur = 'ssp245';
+      const draw = () => {
+        const g = fact(cur, 'people_below_high_tide_2100'), r = o(cur, 2100);
+        sec.querySelector('#slc-hero-2100').innerHTML = `${fmt(g.value / 1e6)}<small> million</small>`;
+        sec.querySelector('#slc-hero-2100-text').innerHTML = `people live today on land that would lie below the high-tide line
+          by 2100 with ${SCEN[cur]} (90% range ${fmt(g.lo / 1e6)}–${fmt(g.hi / 1e6)} million; ${RCP[cur]} in the study). ${src(g)}`;
+        const em = fact(cur, 'emissions'), wm = fact(cur, 'warming'), sl = fact(cur, 'gmsl_2100');
+        sec.querySelector('.slc-overview__scen').innerHTML = em && wm && sl ? `<strong>${esc(LABEL[cur])} (${CODE[cur]}):</strong>
+          ${esc(em.text)} Warming by 2081–2100 of about ${fmt(wm.value, 1)} °C above 1850–1900 (very likely ${fmt(wm.lo, 1)}–${fmt(wm.hi, 1)} °C).
+          Global sea level in 2100 likely ${fmt(sl.lo, 2)}–${fmt(sl.hi, 2)} m above 1995–2014. ${src(wm)}` : '';
+        pl.querySelector('.slc-places__lead').innerHTML = `This story looks at ${word(r.places)} places where the sea
+          already stands against the land, each for a different reason. Together, <strong>${mio(r.pop_today)} million</strong> people
+          there live on land below today’s high-tide line; by 2100 with ${SCEN[cur]}, land where another
+          <strong>${mio(r.pop_added)} million</strong> live today would fall below it.`;
+        compare(cur);
+      };
+      SSPS.forEach((s) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.textContent = LABEL[s]; b.setAttribute('aria-pressed', String(s === cur));
+        b.addEventListener('click', () => { if (s === cur) return; cur = s;
+          seg.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); draw(); });
+        seg.appendChild(b);
+      });
+      draw();
     })();
 
     // ---------- explorer: pick a place, zoom in, look up a spot ----------

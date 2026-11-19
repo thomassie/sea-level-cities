@@ -1,0 +1,8 @@
+[
+	{"scenario":"ssp126","year":2050,"places":7,"pop_today":6841040.0,"pop":7450340.0,"pop_added":609300.0,"km2_today":10621.674999999997,"km2":12703.866999999998},
+	{"scenario":"ssp126","year":2100,"places":7,"pop_today":6841040.0,"pop":8652090.0,"pop_added":1811050.0,"km2_today":10621.674999999997,"km2":14032.002999999999},
+	{"scenario":"ssp245","year":2050,"places":7,"pop_today":6841040.0,"pop":7505590.0,"pop_added":664550.0,"km2_today":10621.674999999997,"km2":12777.673},
+	{"scenario":"ssp245","year":2100,"places":7,"pop_today":6841040.0,"pop":9148180.0,"pop_added":2307140.0,"km2_today":10621.674999999997,"km2":14314.743999999999},
+	{"scenario":"ssp585","year":2050,"places":7,"pop_today":6841040.0,"pop":7632210.0,"pop_added":791170.0,"km2_today":10621.674999999997,"km2":12920.838},
+	{"scenario":"ssp585","year":2100,"places":7,"pop_today":6841040.0,"pop":9924910.0,"pop_added":3083870.0,"km2_today":10621.674999999997,"km2":14711.309}
+]
