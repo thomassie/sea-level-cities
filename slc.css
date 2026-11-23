@@ -266,3 +266,6 @@
   .slc .slc-chapter { padding-top: 2.25rem; }
   .slc .slc-top { top: 0.5rem; }
 }
+
+/* without WebGL the explorer has no map: the frame holds only its note (review F3) */
+.slc .slc-block--explore.is-textonly { height: auto; min-height: 0; cursor: auto; }

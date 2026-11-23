@@ -690,8 +690,10 @@
       if (X) { live.delete(X.inst); X.b.dispose(); X = null; }
       const c = MODELS.get(P);
       select.value = P;
-      ans.innerHTML = '<p>Tap a spot on the map.</p>';
-      return FCC.block3d.create({ container: exEl, base, place: P, detail: true }).then((b) => {
+      ans.innerHTML = WEBGL ? '<p>Tap a spot on the map.</p>' : '<p>Search a neighbourhood or use your location.</p>';
+      // without WebGL: the same data and lookup, answered as text (review F3)
+      const load = WEBGL ? FCC.block3d.create({ container: exEl, base, place: P, detail: true }) : FCC.block3d.data({ base, place: P });
+      return load.then((b) => {
         const inst = { b, extra: isDark() ? { roadAmount: 0.45 } : { roadAmount: 0.6 } };
         live.add(inst); paint(inst);
         X = { P, c, b, inst, meta: b.meta, sink: !!b.meta.subsidence, last: null };
@@ -847,7 +849,13 @@
         });
       }, () => { ans.innerHTML = '<p>The location was not shared.</p>'; }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 });
     });
-    if (!WEBGL) { root.querySelector('.slc-explore__grid').innerHTML = '<p class="slc-note">The map lookup needs WebGL.</p>'; return; }
+    if (!WEBGL) {   // no map: the lookup still answers searches and locations, as text
+      exEl.innerHTML = '<p class="slc-note" style="padding:1rem">This browser cannot show the 3D map (WebGL). The lookup still works: search a neighbourhood by name or use your location.</p>';
+      exEl.classList.add('is-textonly');
+      exEl.removeAttribute('role'); exEl.removeAttribute('aria-label');
+      const credit = root.querySelector('.slc-explore__map .slc-credit');   // no map instructions without a map
+      credit.innerHTML = credit.innerHTML.replace(/^[\s\S]*?<span class="slc-exag"><\/span>\s*/, '');
+    }
     // The explorer loads its block when the reader gets near it.
     const start = () => open(select.value).catch((e) => { exEl.innerHTML = `<p class="slc-note" style="padding:1rem">The map could not load (${esc(e.message)}).</p>`; });
     const io = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting)) { io.disconnect(); start(); } }, { rootMargin: '600px 0px' });

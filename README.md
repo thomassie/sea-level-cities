@@ -15,7 +15,7 @@ Published to `thomassie/sea-level-cities` (GitHub Pages) by `.github/scripts/pub
 | `data/units.json`, `data/exposure.json` | Administrative units (OpenStreetMap) and people below the line per unit, for the explorer |
 | `data/overview.json` | Totals over the mapped places per scenario x year: people below the line today (`pop_today`) and in that scenario (`pop`, `pop_added`), area (`km2_today`, `km2`) |
 | `data/overview_facts.json` | Sourced figures for the overview: each scenario's emissions path, warming and 2100 global sea level (IPCC AR6), global context (Kulp & Strauss 2019) |
-| `data/meta.json` | Export time (`generated_at`) |
+| `data/meta.json` | Export time (`generated_at`), source database (`source_database`) and the year “today” stands for (`today_year`: the year the flood model was run; the sea and, in Jakarta, the ground are as of then) |
 | `blocks/<place>/` | 3D block assets baked by `pipeline/slr/block.py`: height, spill (lowest water level that reaches each cell), shade, borders, roads, names, admin; `block.json` holds size and exaggeration |
 | `static/<place>-<step>.jpg`, `static/<place>-<step>-dark.jpg` | Still images of each step for browsers without WebGL, light and dark (`tools/static/sea-level-cities.mjs`) |
 | `og.png`, `figure-light.png`, `figure-dark.png` | Link preview and series figures (`tools/og/sea-level-cities.mjs`) |

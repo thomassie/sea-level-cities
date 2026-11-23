@@ -81,6 +81,58 @@
     return out;
   }
 
+  // What the flood model says at one spot: shared by the 3D block and the data-only loader (no WebGL).
+  function makeLookup({ meta, S, SC, SR, G, V, VS, VC, adminPx, adminW, adminH, adminUnits, terrains }) {
+    return function lookup(lon, lat) {
+      const [w, s0, e, n] = meta.bbox;
+      const inside = lon >= w && lon <= e && lat >= s0 && lat <= n;
+      if (!inside) return { inside };
+      const c = Math.min(SC - 1, Math.floor(((lon - w) / (e - w)) * SC)), r = Math.min(SR - 1, Math.floor(((n - lat) / (n - s0)) * SR));
+      const v = S[r * SC + c];
+      let district = null, subdistrict = null;
+      if (adminPx) {
+        // the admin raster has its own grid (it can be finer than the flood raster): index it with its own size
+        const ac = Math.min(adminW - 1, Math.floor(((lon - w) / (e - w)) * adminW)), ar = Math.min(adminH - 1, Math.floor(((n - lat) / (n - s0)) * adminH));
+        const k = (ar * adminW + ac) * 4, si = adminPx[k] * 256 + adminPx[k + 1], di = adminPx[k + 2];
+        district = di ? adminUnits.districts[di - 1] : null;
+        subdistrict = si ? adminUnits.subdistricts[si - 1] : null;
+      }
+      const states = {};
+      for (const nm in terrains) if (terrains[nm].S) states[nm] = terrains[nm].S[r * SC + c];
+      const at = (A) => (A && A[r * SC + c] < 900 ? A[r * SC + c] : null);
+      return { inside, sea: v <= -49, spill: v, states, ground: G ? G[r * SC + c] : null, vlm: at(V),
+               vlmSpread: at(VS), vlmCheck: at(VC), district, subdistrict };
+    };
+  }
+
+  // The block's data without the 3D view (browsers without WebGL): the same rasters, decoded on a 2D canvas, so the
+  // spot lookup works as text. The view methods are no-ops, so the page can treat both alike.
+  async function data({ base = '', place }) {
+    const dir = `${base}blocks/${place}/`;
+    const meta = await fetch(dir + 'block.json').then((r) => r.json());
+    const layers = new Set(meta.layers || []);
+    const [spillIm, gIm, names, aIm, aJs, vIm, vsIm, vcIm] = await Promise.all([
+      loadImage(dir + 'spill.png'), loadImage(dir + 'ground.png'),
+      layers.has('names') ? fetch(dir + 'names.json').then((r) => r.json()) : [],
+      layers.has('admin') ? loadImage(dir + 'admin.png') : null,
+      layers.has('admin') ? fetch(dir + 'admin.json').then((r) => r.json()) : null,
+      layers.has('vlm') ? loadImage(dir + 'vlm.png') : null,
+      layers.has('vlm_spread') ? loadImage(dir + 'vlm_spread.png') : null,
+      layers.has('vlm_check') ? loadImage(dir + 'vlm_check.png') : null]);
+    const S = decodeTerrarium(spillIm), SC = spillIm.width, SR = spillIm.height;
+    const terrains = { none: { S } };
+    const lookup = makeLookup({ meta, S, SC, SR, G: decodeTerrarium(gIm), V: vIm && decodeTerrarium(vIm),
+      VS: vsIm && decodeTerrarium(vsIm), VC: vcIm && decodeTerrarium(vcIm), adminPx: aIm && pixels(aIm),
+      adminW: aIm ? aIm.width : 0, adminH: aIm ? aIm.height : 0, adminUnits: aJs, terrains });
+    function loadTerrain(name) {
+      if (terrains[name]) return Promise.resolve(terrains[name]);
+      return (terrains[name] = loadImage(`${dir}spill_${name}.png`).then((im) => (terrains[name] = { S: decodeTerrarium(im) })));
+    }
+    const none = () => {};
+    return { textOnly: true, meta, names, spillWidth: SC, lookup, loadTerrain, view: none, level: none, today: none, sinkTo: none,
+             terrain: none, palette: none, labels: none, marker: none, flyTo: none, zoomBy: none, interact: none, dispose: none };
+  }
+
   async function create({ container, base = '', place, detail = false }) {
     const THREE = await (threePromise || (threePromise = import(THREE_URL)));
     const dir = `${base}blocks/${place}/`;
@@ -595,27 +647,7 @@
       view({ tx: x, tz: -z, dist }, ms);
     }
     function zoomBy(f) { const to = { dist: Math.max(0.035, Math.min(2.6, cam.dist * f)) }; view(to, 350); }
-    function lookup(lon, lat) {
-      const [w, s0, e, n] = meta.bbox;
-      const inside = lon >= w && lon <= e && lat >= s0 && lat <= n;
-      if (!inside) return { inside };
-      const c = Math.min(SC - 1, Math.floor(((lon - w) / (e - w)) * SC)), r = Math.min(SR - 1, Math.floor(((n - lat) / (n - s0)) * SR));
-      const v = S[r * SC + c];
-      let district = null, subdistrict = null;
-      if (adminPx) {
-        // the admin raster has its own grid (it can be finer than the flood raster): index it with its own size
-        const ac = Math.min(adminW - 1, Math.floor(((lon - w) / (e - w)) * adminW)), ar = Math.min(adminH - 1, Math.floor(((n - lat) / (n - s0)) * adminH));
-        const k = (ar * adminW + ac) * 4, si = adminPx[k] * 256 + adminPx[k + 1], di = adminPx[k + 2];
-        district = di ? adminUnits.districts[di - 1] : null;
-        subdistrict = si ? adminUnits.subdistricts[si - 1] : null;
-      }
-      const states = {};
-      for (const n in terrains) if (terrains[n].S) states[n] = terrains[n].S[r * SC + c];
-      const at = (A) => (A && A[r * SC + c] < 900 ? A[r * SC + c] : null);
-      return { inside, sea: v <= -49, spill: v, states, ground: G ? G[r * SC + c] : null, vlm: at(V),
-               vlmSpread: at(VS), vlmCheck: at(VC),
-               district, subdistrict };
-    }
+    const lookup = makeLookup({ meta, S, SC, SR, G, V, VS, VC, adminPx, adminW, adminH, adminUnits, terrains });
     const resizeObs = 'ResizeObserver' in g ? new ResizeObserver(render) : null;
     if (resizeObs) resizeObs.observe(container);
     container.__fcc = { renderer, scene, camera };   // handle for tools/page_check
@@ -665,5 +697,5 @@
              interact, meta, render, dispose };
   }
 
-  FCC.block3d = { supported, create };
+  FCC.block3d = { supported, create, data };
 })(window);
