@@ -251,6 +251,15 @@
 .slc .slc-places__lead strong { font-weight: 600; }
 .slc .slc-places__list { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 1.25rem 2rem; }
 .slc .slc-places__list li { display: block; line-height: 1.5; padding-top: 0.6rem; border-top: 1px solid var(--rule); }
+/* locator map: a section of the globe at the top of each place (sea = page, land = muted tint, place = red dot) */
+.slc .slc-places__map { display: block; width: 100%; margin: 0 0 0.6rem; background: color-mix(in srgb, var(--blue) 10%, var(--paper)); }
+.slc .slc-loc__grat { fill: none; stroke: var(--rule); stroke-width: 0.5; }
+.slc .slc-loc__land { fill: color-mix(in srgb, var(--muted) 40%, var(--paper)); stroke: none; }
+.slc .slc-loc__border { fill: none; stroke: var(--paper); stroke-width: 0.75; }
+.slc .slc-loc__ring { fill: none; stroke: var(--red); stroke-width: 1.5; }
+.slc .slc-loc__scale path { fill: none; stroke: var(--ink); stroke-width: 1.25; }
+.slc .slc-loc__scale text { font-family: var(--font-support); font-size: 11px; fill: var(--ink); paint-order: stroke; stroke: color-mix(in srgb, var(--blue) 10%, var(--paper)); stroke-width: 3px; stroke-linejoin: round; }
+.slc .slc-loc__dot { fill: var(--red); stroke: var(--paper); stroke-width: 1; }
 .slc .slc-places__name { display: block; font-size: var(--step-1); font-weight: 600; color: var(--ink); text-decoration: none; }
 .slc .slc-places__name:hover { text-decoration: underline; }
 .slc .slc-places__kind { display: block; font-family: var(--font-support); font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.25rem; }
