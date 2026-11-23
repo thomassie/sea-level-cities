@@ -627,37 +627,17 @@
       };
       pl.querySelector('.slc-places__list').innerHTML = chapters.filter(({ hasBlock }) => hasBlock).map(({ c }) => `<li>
         <svg class="slc-places__map" data-lon="${c.p.lon}" data-lat="${c.p.lat}" data-span="${c.P === 'majuro' ? 62 : 28}" role="img"
-          aria-label="${esc(`Locator map: ${c.p.name.split(/[:,]| and the /)[0]}, ${Math.abs(c.p.lat).toFixed(1)}° ${c.p.lat >= 0 ? 'N' : 'S'}, ${Math.abs(c.p.lon).toFixed(1)}° ${c.p.lon >= 0 ? 'E' : 'W'}`)}"></svg>
+          data-label="${esc(`Locator map: ${c.p.name.split(/[:,]| and the /)[0]}, ${Math.abs(c.p.lat).toFixed(1)}° ${c.p.lat >= 0 ? 'N' : 'S'}, ${Math.abs(c.p.lon).toFixed(1)}° ${c.p.lon >= 0 ? 'E' : 'W'}`)}"></svg>
         <a class="slc-places__name" href="#slc-ch-${c.P}">${esc(c.p.name.split(/[:,]| and the /)[0])}</a>
         <span class="slc-places__kind">${esc(THEME[c.P] || '')}</span> ${esc(WHY[c.P] || '')}
         <a class="slc-places__go" href="#slc-ch-${c.P}">3D view ↓</a></li>`).join('');
       // Locator maps: a section of the globe (orthographic, centred on the place, about 3,000 km to either side) so the
       // reader can find the place on Earth; wider for Majuro, whose nearest large land is thousands of km away. Natural Earth 1:50m, simplified (pipeline/slr/locator.py); no tile service.
-      d3.json(`${root.dataset.base || ''}static/world-50m.json`).then((world) => {
+      (FCC.locator ? Promise.resolve() : new Promise((ok, no) => {   // embeds that list scripts by hand may not include locator.js: load it
+        const s = document.createElement('script'); s.src = `${root.dataset.base || ''}locator.js`; s.onload = ok; s.onerror = no; document.head.append(s);
+      })).then(() => FCC.locatorWorld(root.dataset.base || '')).then((world) => {
         const maps = [...pl.querySelectorAll('.slc-places__map')];
-        const draw = () => maps.forEach((el) => {
-          const W = el.clientWidth || 280, H = Math.round(W * 0.5), lon = +el.dataset.lon, lat = +el.dataset.lat;
-          const proj = d3.geoOrthographic().rotate([-lon, -lat]).clipAngle(90)
-            .scale((W / 2) / Math.sin(+el.dataset.span * Math.PI / 180)).translate([W / 2, H / 2]);
-          const path = d3.geoPath(proj);
-          const svg = d3.select(el).attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
-          svg.selectAll('*').remove();
-          svg.append('path').attr('class', 'slc-loc__grat').attr('d', path(d3.geoGraticule10()));
-          svg.append('path').attr('class', 'slc-loc__land').attr('d', path({ type: 'GeometryCollection', geometries: world.land }));
-          svg.append('path').attr('class', 'slc-loc__border').attr('d', path({ type: 'GeometryCollection', geometries: world.borders }));
-          const [px, py] = proj([lon, lat]);
-          svg.append('circle').attr('class', 'slc-loc__ring').attr('cx', px).attr('cy', py).attr('r', 9);
-          svg.append('circle').attr('class', 'slc-loc__dot').attr('cx', px).attr('cy', py).attr('r', 3.5);
-          // scale bar, bottom right: true at the centre (6,371 km earth radius / projection scale = km per pixel there);
-          // the views differ (Majuro's is about twice as wide), so each map states its own
-          const kmPx = 6371 / proj.scale(), want = (W * 0.25) * kmPx;
-          const km = [100, 200, 500, 1000, 2000, 5000].reduce((best, k) => (Math.abs(k - want) < Math.abs(best - want) ? k : best));
-          const len = km / kmPx, x1 = W - 8, x0 = x1 - len, yb = H - 8;
-          const sc = svg.append('g').attr('class', 'slc-loc__scale');
-          sc.append('path').attr('d', `M${x0},${yb - 4}V${yb}H${x1}V${yb - 4}`);
-          sc.append('text').attr('x', x1).attr('y', yb - 7).attr('text-anchor', 'end').text(`${d3.format(',')(km)} km`);
-          el.setAttribute('aria-label', `${el.getAttribute('aria-label').replace(/; scale bar.*$/, '')}; scale bar ${d3.format(',')(km)} km`);
-        });
+        const draw = () => maps.forEach((el) => FCC.locator(el, world, { lon: +el.dataset.lon, lat: +el.dataset.lat, span: +el.dataset.span, cls: 'slc-loc' }));
         draw();
         let wPrev = 0;
         new ResizeObserver(() => { const w = maps[0] && maps[0].clientWidth; if (w && w !== wPrev) { wPrev = w; draw(); } }).observe(pl.querySelector('.slc-places__list'));

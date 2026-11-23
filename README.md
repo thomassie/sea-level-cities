@@ -9,7 +9,7 @@ Published to `thomassie/sea-level-cities` (GitHub Pages) by `.github/scripts/pub
 | `embed-example.html` | The page inside a stand-in host page with hostile styles and a fixed header (test only, noindex) |
 | `slc.js`, `slc.css` | The page: chapters, comparison row, explorer, sources and method |
 | `staff.js` | The gauge staff (page-specific) |
-| `block3d.js`, `scrolly.js`, `theme.css` | Shared code, copied from `site/_shared/` by `tools/sync_shared.py` |
+| `block3d.js`, `scrolly.js`, `theme.css`, `locator.js`, `world-50m.json` | Shared code, copied from `site/_shared/` by `tools/sync_shared.py` (`locator.js` draws the place list's locator maps and is loaded on demand if the embed does not list it) |
 | `data/places.json` | One row per place: name, bbox, background facts (`profile`, sourced), `msl_m` (local mean sea level above EGM2008), `mhhw_m`, storms, defences (crest heights as published and above local MSL), documented impacts with sources, labels |
 | `data/scenarios.json` | One row per place, scenario (`s`), year (`y`), land state (`sub`) and water (`w`: `high_tide` or a storm): rise `r` (with likely range `rl`, `rh`), water level `wl` (m above EGM2008), land below it `a` km² (`al`, `ah`), median ground height `g`, people `pop` (`pl`, `ph`). Land state `dem_epoch` (Jakarta, today only): the terrain as published, not lowered by the sinking since 2013 |
 | `data/units.json`, `data/exposure.json` | Administrative units (OpenStreetMap) and people below the line per unit, for the explorer |
