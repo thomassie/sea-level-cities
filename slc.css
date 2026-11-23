@@ -144,7 +144,7 @@
 .slc .slc-staff-mark.is-tide line { stroke: var(--blue); }
 .slc .slc-staff-mark.is-crest line { stroke: var(--ink); stroke-width: 3; }
 .slc .slc-staff-mark.is-storm line { stroke: var(--red); }
-.slc .slc-staff-mark.is-storm text { fill: var(--red); }
+.slc .slc-staff-mark.is-storm text { fill: var(--ink); font-weight: 500; }   /* text in ink for contrast; the red line carries the identity (review F1) */
 .slc .slc-staff-mark.is-future line { stroke: var(--loss-far); }
 .slc .slc-staff-mark { transition: opacity 400ms; }
 .slc .slc-staff-mark.is-off { opacity: 0; }

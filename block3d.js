@@ -95,7 +95,7 @@
     spillTex.magFilter = spillTex.minFilter = THREE.NearestFilter;
     spillTex.generateMipmaps = false;
     const layers = new Set(meta.layers || []);
-    let G = null, V = null, VS = null, VC = null, roadsTex = null, names = [], adminPx = null, adminUnits = null;
+    let G = null, V = null, VS = null, VC = null, roadsTex = null, names = [], adminPx = null, adminW = 0, adminH = 0, adminUnits = null;
     const bordersTex = layers.has('borders') ? await loader.loadAsync(dir + 'borders.png') : null;
     if (bordersTex) { bordersTex.colorSpace = THREE.NoColorSpace; bordersTex.anisotropy = 4; }
     if (detail) {
@@ -111,7 +111,7 @@
       ]).then((a) => { if (a[5]) V = decodeTerrarium(a[5]); if (a[6]) VS = decodeTerrarium(a[6]);
                        if (a[7]) VC = decodeTerrarium(a[7]); return a; });
       G = decodeTerrarium(gIm); roadsTex = rTex; names = nm;
-      if (aIm) { adminPx = pixels(aIm); adminUnits = aJs; }
+      if (aIm) { adminPx = pixels(aIm); adminW = aIm.width; adminH = aIm.height; adminUnits = aJs; }
       if (roadsTex) { roadsTex.colorSpace = THREE.NoColorSpace; roadsTex.anisotropy = 4; }
     }
     const blank = () => { const t = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1); t.needsUpdate = true; return t; };
@@ -603,7 +603,9 @@
       const v = S[r * SC + c];
       let district = null, subdistrict = null;
       if (adminPx) {
-        const k = (r * SC + c) * 4, si = adminPx[k] * 256 + adminPx[k + 1], di = adminPx[k + 2];
+        // the admin raster has its own grid (it can be finer than the flood raster): index it with its own size
+        const ac = Math.min(adminW - 1, Math.floor(((lon - w) / (e - w)) * adminW)), ar = Math.min(adminH - 1, Math.floor(((n - lat) / (n - s0)) * adminH));
+        const k = (ar * adminW + ac) * 4, si = adminPx[k] * 256 + adminPx[k + 1], di = adminPx[k + 2];
         district = di ? adminUnits.districts[di - 1] : null;
         subdistrict = si ? adminUnits.subdistricts[si - 1] : null;
       }
@@ -659,7 +661,7 @@
       overlay.remove();
       delete container.__fcc;
     }
-    return { view, level, today, loadTerrain, terrain: setTerrain, sinkTo, palette, labels: setLabels, names, marker, flyTo, zoomBy, lookup,
+    return { view, level, today, loadTerrain, terrain: setTerrain, sinkTo, palette, labels: setLabels, names, marker, flyTo, zoomBy, lookup, spillWidth: SC,
              interact, meta, render, dispose };
   }
 

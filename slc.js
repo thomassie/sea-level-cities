@@ -69,8 +69,8 @@
     // "1.23 m above" / "0.40 m below" mean sea level
     const vsMsl = (v) => `${metres(v)} m ${v < 0 ? 'below' : 'above'}`;
     const cm = (v) => fmt(Math.round(v * 100));
-    const usable = (i) => !/To check/i.test(i.text);
-    const imp = (P, f) => (byId.get(P).impacts || []).filter(usable).find(f);
+    // only facts of medium or high confidence reach places.json (mart.slr_places, review E1)
+    const imp = (P, f) => (byId.get(P).impacts || []).find(f);
     const cite = (i) => (i ? `${esc(i.text)} <span class="slc-src">(<a href="${esc(i.url)}">${esc(i.src)}</a>)</span>` : '');
     const date = (s) => d3.timeFormat('%-d %B %Y')(new Date(s));
 
@@ -83,7 +83,9 @@
       const r30 = row(P, 'ssp245', 2030).r;
       const tide = modelled ? t.wl : base0 + (r30 * (YEAR - 2005)) / 25;
       const rToday = tide - base0;
-      const lvl = (r) => base0 + r.r;
+      // the modelled water level (scenarios.json wl) where it exists, so staff, text and map agree; Jakarta's excludes
+      // AR6's land-motion term because its measured sinking is modelled instead (review A26)
+      const lvl = (r) => (r.wl != null ? r.wl : base0 + r.r);
       const ab = (m) => m - msl;
       const crest = (p.defences || []).filter((d) => d.on_staff);
       const above = imp(P, (i) => /above high tide/.test(i.unit || ''));
@@ -101,23 +103,32 @@
 
     // ---------- the chapters ----------
     // Shared sentences
+    // AR6's land-motion term is a slight uplift at some deltas, so its "relative" rise there contains no sinking (review B3)
+    const uplift = (c) => c.P !== 'jakarta' && c.p.ar6_vlm_m != null && c.p.ar6_vlm_m <= 0;
+    const upliftNote = (c) => (uplift(c) ? ` The IPCC’s figure here contains no sinking of the delta (its land-motion term is a
+      slight rise of the land), so the relative rise is if anything a lower bound.` : '');
     const rising = (c, y, r, rel) => `By ${y}, with medium emissions (SSP2-4.5), the IPCC projects the ${rel ? 'relative ' : ''}sea level
-      ${c.P === 'new-york' ? 'at the Battery ' : ''}to rise about <strong>${cm(r.r - c.rToday)} cm</strong> above today’s, to
-      ${vsMsl(c.ab(c.lvl(r)))} mean sea level at high water.`;
+      ${c.P === 'new-york' ? 'at the Battery ' : ''}to rise about <strong>${cm(c.lvl(r) - c.tide)} cm</strong> above today’s, to
+      ${vsMsl(c.ab(c.lvl(r)))} mean sea level at high water.${rel && y === 2100 ? upliftNote(c) : ''}`;
     const below = (r, verb = 'would lie') => (r.a == null ? '' : ` Without defences, <strong>${km2(r.a)} km²</strong> ${verb} below the
       high-tide line, land where about <strong>${people(r.pop)}</strong> people live today${likely(r)}.`);
     const groundLine = (c) => (c.ground == null ? '' : `<p>The land the sea could reach by 2100 lies typically
       <strong>${vsMsl(c.ab(c.ground))}</strong> mean sea level (the dashed mark).</p>`);
     const tideLine = (c) => `<p>On an ordinary day, high water rises to <strong>${vsMsl(c.ab(c.tide))}</strong> mean sea level.${below(c.t, 'lie')}</p>`;
     const extremeLine = (c, rel) => (c.x100.r == null ? '' : ` With very high emissions (SSP5-8.5) the ${rel ? 'relative ' : ''}rise to 2100
-      would be about ${cm(c.x100.r - c.rToday)} cm${c.x100.a != null ? `, and about ${people(c.x100.pop)} people would live below the line` : ''}.`);
-    const unconverted = (d) => `${esc(d.name)}: a crest of ${fmt(d.low, 1)}${d.high > d.low ? `–${fmt(d.high, 1)}` : ''} ${esc(d.unit)}
-      “above sea level”, by its builders’ figures. The sources do not say which sea level, so it is not drawn on the staff.
+      would be about ${cm(c.lvl(c.x100) - c.tide)} cm above today’s${c.x100.a != null ? `, and about ${people(c.x100.pop)} people would live below the line` : ''}.`);
+    // A crest whose source does not state the datum: the published figure with the source's own wording (d.datum),
+    // not converted and not drawn on the staff.
+    const unconverted = (d) => `${esc(d.name)}: a crest of ${fmt(d.low, 1)}${d.high > d.low ? `–${fmt(d.high, 1)}` : ''} ${esc(d.unit)},
+      ${esc(d.datum)}. Without a stated datum it cannot be compared with the staff, so it is not drawn there.
       <span class="slc-src">(<a href="${esc(d.url)}">${esc(d.src)}</a>)</span>`;
     const crestLine = (c, d) => `The crest stands <strong>${metres(d.low_msl)}${d.high_msl > d.low_msl ? `–${metres(d.high_msl)}` : ''} m</strong>
       above mean sea level (published: ${fmt(d.low, 2)}${d.high > d.low ? `–${fmt(d.high, 2)}` : ''} ${esc(d.unit)} ${esc(d.datum)}).
       <span class="slc-src">(<a href="${esc(d.url)}">${esc(d.src)}</a>)</span>`;
     const defence = (c, id) => (c.p.defences || []).find((d) => d.id === id);
+    const upliftLine = () => { const n = places.filter((p) => uplift({ P: p.place_id, p })).map((p) => esc(p.name.split(/[:,]| and the /)[0]));
+      return n.length ? `For ${n.join(', ').replace(/, ([^,]*)$/, ' and $1')} that trend is a slight rise of the land, so the
+        IPCC’s figure contains none of the deltas’ sinking and the relative rise there is if anything a lower bound.` : ''; };
     // Opening paragraph: who lives there and what the place is known for (content/slr/profile.csv, sourced).
     const PROFILE = { jakarta: ['population', 'capital'], majuro: ['population', 'median-height'], 'new-york': ['population', 'floodplain'], hamburg: ['population', 'port'],
       mekong: ['province', 'rice'], khulna: ['population', 'sundarbans'], 'nile-delta': ['population', 'delta', 'sediment'],
@@ -132,7 +143,8 @@
         lede: () => `<p>New York’s danger is not the daily tide but the storm on top of it. When Sandy came ashore, the water
           rose metres above the ordinary high tide and flooded the subway, the tunnels and whole neighbourhoods.</p>`,
         defence: () => `<p>No continuous sea wall protects the city. Its defences are piecemeal: bulkheads, dunes, raised
-          parks and a few walls under construction. On the staff, what matters is the height a storm reaches.</p>`,
+          parks and a few walls under construction <span class="slc-src">(<a href="https://www.nyc.gov/assets/sustainability/downloads/pdf/publications/Sandy-10-Years-Later.pdf">NYC, Sandy 10 Years Later</a>)</span>.
+          On the staff, what matters is the height a storm reaches.</p>`,
         extra: (c) => {
           const s = (c.p.storms || [])[0];
           if (!s) return [];
@@ -140,8 +152,11 @@
           c.marks.push({ key: 'storm', text: s.name, m: s.peak_m, tone: 'storm' });
           return [
             { level: now.wl, show: ['storm'], when: `${s.name}’s peak on today’s sea`,
-              html: `<p>${esc(s.name)}’s storm tide peaked at <strong>${vsMsl(c.ab(s.peak_m))}</strong> mean sea level
-                at the Battery on ${date(s.date)} <span class="slc-src">(<a href="${esc(s.url)}">${esc(s.src)}</a>)</span>.
+              html: `<p>${esc(s.name)}’s storm tide peaked at the Battery on the evening of ${date(s.date)}
+                <span class="slc-src">(<a href="${esc(s.url)}">${esc(s.src)}</a>)</span>: <strong>${vsMsl(c.ab(s.peak_m))}</strong>
+                mean sea level as this page measures it (from satellite altimetry; NOAA’s own tide-gauge mean for 1983–2001
+                is a few centimetres lower). The staff marks that peak; the level shown on the map is the same storm on
+                today’s higher sea.
                 The same storm on today’s slightly higher sea would reach land where about <strong>${people(now.pop)}</strong>
                 people live${likely(now)}, ${km2(now.a)} km² in this block, which includes the New Jersey shore.</p>
                 <p>${cite(imp(c.P, (i) => i.unit === 'sq mi'))}</p>` },
@@ -172,7 +187,8 @@
         lede: () => `<p>In the Mekong Delta the sea does not need a storm. The land of Ben Tre and Tra Vinh is so low and
           flat that the ordinary high tide already stands above much of it, and salt water pushes up the river arms.</p>`,
         defence: (c) => `<p>Earth sea dikes and sluice gates hold the tide and the salt back, but we found no documented
-          crest heights for the dikes of these two provinces.</p><p>${unconverted(defence(c, 'ba_lai_sluice'))}</p>`,
+          crest heights for the dikes of these two provinces.</p>${(() => { const d = defence(c, 'ba_lai_sluice');
+            return d ? `<p>${unconverted(d)}</p>` : ''; })()}`,
         mechanism: (c) => `<p>${cite(imp(c.P, (i) => i.unit === 'households'))}</p>
           <p>${cite(imp(c.P, (i) => i.kind === 'subsidence'))} This sinking from groundwater pumping is not in the map’s
           terrain, so the land below the line is if anything understated.</p>` },
@@ -186,14 +202,16 @@
       'nile-delta': { az: 180, relative: true,
         lede: () => `<p>The Mediterranean barely has a tide. Yet the land behind Alexandria, around Lake Maryut, lies
           below sea level, and the delta’s edge sinks and wears away now that the Nile’s sediment stops at the dam.</p>`,
-        defence: (c) => `<p>${unconverted(defence(c, 'rosetta_seawall'))}</p><p>It holds the eroding river mouth in place; it
-          does not protect the low land behind Alexandria, where most of the people below the line live.</p>`,
+        defence: (c) => { const w = (c.p.profile || []).find((x) => x.id === 'rosetta-seawalls');
+          return `<p>${w ? cite(w) : ''}</p><p>They hold the eroding river mouth in place; they do not protect the low land
+          behind Alexandria, where most of the people below the line live.</p>`; },
         mechanism: (c) => `<p>${cite(imp(c.P, (i) => i.unit === 'm/yr'))}</p><p>${cite(imp(c.P, (i) => i.kind === 'subsidence'))}</p><p>${cite(imp(c.P, (i) => i.unit === 'buildings'))}</p>` },
       louisiana: { az: 10, relative: true,
-        lede: () => `<p>Louisiana’s coast is the fastest-sinking in the United States. Here the sea is rising and the land is
-          sinking and washing away at the same time, between the bayous of Terrebonne and Barataria.</p>`,
+        lede: (c) => `<p>Coastal Louisiana sinks about ${fmt(imp(c.P, (i) => i.kind === 'subsidence').value)} millimetres a year on average (see below). Here
+          the sea is rising and the land is sinking and washing away at the same time, between the bayous of Terrebonne
+          and Barataria.</p>`,
         defence: (c) => { const d = defence(c, 'larose_golden_meadow');
-          return `<p>${esc(d.name)}, one of the levee rings that protect the towns along the bayous. ${crestLine(c, d)}</p>
+          return `<p>The towns along the bayous sit inside levee rings. ${d ? unconverted(d) : ''}</p>
             <p>Outside the rings, the marsh and the fishing camps have no levee at all.</p>`; },
         mechanism: (c) => `<p>${cite(imp(c.P, (i) => i.unit === 'km²'))}</p><p>${cite(imp(c.P, (i) => i.kind === 'subsidence'))}</p>
           <p>Isle de Jean Charles: ${cite(imp(c.P, (i) => i.unit === 'acres remaining'))} ${cite(imp(c.P, (i) => i.kind === 'relocation'))}</p>` },
@@ -247,7 +265,10 @@
             <p>Jakarta sits on a flat coastal plain on the Java Sea. Its northern districts are barely above the sea, and
             some are already below it.</p>${groundLine(c)}` },
         { cam: { az: 165, el: 28, dist: 1.2, tx: -3, tz: 3 }, level: c.tide, show: ['ground', 'tide'], when: 'high water today', t: 'none',
-          html: `${tideLine(c)}<p>Sea walls, embankments and pumps keep most of it dry. ${wall ? unconverted(wall) : ''}</p>` },
+          html: `${tideLine(c)}${(() => { const u = r('today', null, 'dem_epoch');   // review B5: the terrain's date is uncertain
+              return u.pop == null ? '' : `<p>That count lowers the terrain model by the sinking measured since about 2013, when
+              its heights were taken; the model was later corrected with satellite heights from 2018 on, so its true date is
+              uncertain. On its heights as published, the figure would be about ${people(u.pop)}; the true figure for today most likely lies between the two.</p>`; })()}<p>Sea walls, embankments and pumps keep most of it dry. ${wall ? unconverted(wall) : ''}</p>` },
         { cam: { az: 175, el: 30, dist: 1.3, tx: -2, tz: 2 }, level: c.tide, show: ['ground', 'tide'], when: 'sea as today · ground sinking',
           t: `${SINK}_2050`,
           html: `<p>${sub ? cite(sub) : ''}</p><p>The ground is sinking, mostly because groundwater is pumped from beneath
@@ -270,8 +291,8 @@
               return d ? `, ${people(d.e.pop)} of them in the district of ${esc(d.u.n)}` : ''; })()}.</p>` },
         { cam: { az: 235, el: 34, dist: 2.25, tx: 0, tz: 0 }, level: c.lvl(c.x100), show: ['ground', 'tide', 'y2050', 'y2100'],
           when: '2100 · very high emissions · ground sinking', t: `${SINK}_2100`,
-          html: `<p>With very high emissions (SSP5-8.5): about <strong>${cm(c.x100.r - c.rToday)} cm</strong> of sea-level
-            rise and <strong>${km2(x100.a)} km²</strong> below the high-tide line, home to about
+          html: `<p>With very high emissions (SSP5-8.5): about <strong>${cm(c.lvl(c.x100) - c.tide)} cm</strong> of relative
+            sea-level rise above today’s and <strong>${km2(x100.a)} km²</strong> below the high-tide line, home to about
             <strong>${people(x100.pop)}</strong> people today${likely(x100)}. Even if the sinking halved every 10 years,
             it would be about ${people(r('ssp585', 2100, 'halflife10').pop)}.</p>` },
       ];
@@ -290,11 +311,11 @@
     });
 
     // ---------- page ----------
-    const credit = `Sources, licences and method: see the end of the page. Borders and names © OpenStreetMap contributors (ODbL).`;
+    const credit = `Sources, licences and method: see the end of the page. Borders and names © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (ODbL).`;
     root.innerHTML = `
       ${root.dataset.header === 'false' ? '' : `<header class="slc-head">
         <h1>Sea-level Cities</h1>
-        <p class="slc-dek">Where the sea already stands against the land, and how much higher it will stand.</p>
+        <p class="slc-dek">Where the sea already stands against the land, and how much higher it is projected to stand.</p>
 </header>`}
       <nav class="slc-nav" id="slc-nav" aria-label="On this page">
         <a href="#slc-overview">The world</a><a href="#slc-places"><span class="slc-nplaces-cap"></span> places</a><a href="#slc-compare-h">All staffs side by side</a><a href="#slc-explore-h">Look up a spot</a><a href="#slc-method-h">Sources and method</a>
@@ -321,7 +342,7 @@
       <section class="slc-compare" aria-labelledby="slc-compare-h">
         <h2 id="slc-compare-h">The same sea, <span class="slc-nshores"></span> shores</h2>
         <p class="slc-compare__dek">All the staffs side by side, each with its zero at its own mean sea level. The water
-          stands where high water would be in 2100 with <span class="slc-compare__scen">medium emissions</span> (the emissions switch at the top).</p>
+          stands where high water would be in 2100 with <span class="slc-compare__scen">medium emissions</span> (the emissions switch at the top); the dashed mark is the typical height of the land that line would reach.</p>
         <div class="slc-compare__row"></div>
         <p class="slc-note slc-compare__note"></p>
       </section>
@@ -339,7 +360,7 @@
         <div class="story__graphic"><figure>
           <div class="slc-graphic${hasBlock ? '' : ' slc-graphic--staff'}">
             ${hasBlock ? `<div class="slc-block" id="slc-block-${c.P}" role="img" aria-label="3D block of ${esc(c.p.name)}"></div>` : ''}
-            <div class="slc-staffbox" aria-label="Gauge staff for ${esc(c.p.name)}, metres above local mean sea level"></div>
+            <div class="slc-staffbox" role="img" aria-label="Gauge staff for ${esc(c.p.name)}, metres above local mean sea level"></div>
           </div>
           <div class="slc-readout" aria-live="polite"></div>
           <p class="slc-credit">${credit} <span class="slc-exag"></span></p>
@@ -363,7 +384,7 @@
               <p class="slc-hint" aria-hidden="true"></p>
             </div>
             <p class="slc-credit">Drag to move · right-drag or Shift-drag to turn · pinch, or Ctrl/⌘ + scroll, to zoom ·
-              double-click to zoom in. <span class="slc-exag"></span> Roads, borders and names: © OpenStreetMap contributors (ODbL).
+              double-click to zoom in. <span class="slc-exag"></span> Roads, borders and names: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (ODbL).
               People: GHS-POP 2025 (JRC); Jakarta scaled to BPS kelurahan counts.</p>
           </figure>
           <div class="slc-explore__panel">
@@ -402,11 +423,12 @@
           <div>
             <h3>What the maps show</h3>
             <p>Land that lies at or below a water level <em>and</em> is connected to the open sea through other such land,
-              on a grid of about 30 m: low hollows inland with no path to the sea stay dry. The water level is the
-              place’s mean sea level, plus its mean higher high water (the average high tide), plus the rise the IPCC
-              projects for that year (AR6, median; the likely range is the 17th to 83rd percentile). Today’s level adds
-              the median rise from the 1995–2014 baseline to ${YEAR}. Rises include the IPCC’s long-term land motion,
-              which is why they are called relative where the land sinks.</p>
+              on a grid of about 30 m (about 11 m for Majuro): low hollows inland with no path to the sea stay dry. The
+              water level is the place’s mean sea level, plus its mean higher high water (the average of each day’s
+              higher high tide; for Hamburg, the mean of all high tides), plus the rise the IPCC projects for that year
+              (AR6, median; the likely range is the 17th to 83rd percentile). Today’s level adds the median rise from
+              the 1995–2014 baseline to ${YEAR}. The IPCC’s rise is relative: it includes a long-term trend of land
+              motion at the nearest tide gauge or grid cell. ${upliftLine()}</p>
             <p>People are those living <em>today</em> on land below the line (population held at 2025). The counts are
               not a forecast of where people will live. The maps show land below the high-tide line, not land that floods:
               sea walls, dikes, pumps and drains are not modelled, and they keep much of this land dry today.</p>
@@ -414,26 +436,52 @@
             <p>Defences; waves, rain and river floods; erosion and salinisation, which the chapters tell from documented
               impacts. Storms appear only as levels (Sandy in New York, the 1976 flood in Hamburg). Measured sinking of
               the ground is modelled only for Jakarta; elsewhere the land is today’s terrain, and where it sinks fast
-              (the Mekong Delta, Louisiana) the land below the line is understated. Terrain models have errors of tens of
-              centimetres, more on built-up land, and their heights date from about 2011–2015. The likely ranges combine
+              (the Mekong Delta, Louisiana) the land below the line is understated. One high-tide level is used for each
+              block, although the tide weakens up rivers: in the Mekong Delta the coastal level is applied up to 80 km
+              inland. Terrain models have errors of tens of centimetres, more on built-up land, and their heights date
+              from about 2011–2015. The likely ranges combine
               the uncertainty of the rise, of the local mean sea level and of the terrain; they do not cover unlikely
               but severe ice-sheet outcomes.</p>
           </div>
           <div>
             <h3>Sources</h3>
             <ul>
-              <li>Sea-level projections: IPCC AR6, Garner et al. 2021 (NASA Sea Level Projection Tool), CC BY 4.0.</li>
-              <li>Terrain: DeltaDTM v1.1, Pronk et al. 2024 (TU Delft, CC BY 4.0). Relief above it: produced using
-                Copernicus WorldDEM-30 © DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under
-                COPERNICUS by the European Union and ESA. Seafloor: ETOPO 2022 (NOAA NCEI).</li>
-              <li>Mean sea level: DTU21 mean sea surface © DTU Space, and the EGM2008 geoid (NGA). High water: tide
-                gauges of the University of Hawaii Sea Level Center, NOAA and PEGELONLINE (WSV, DL-DE/Zero-2.0); for
-                the Mekong Delta the EOT20 tide model (Hart-Davis et al. 2021, CC BY 4.0).</li>
-              <li>People and buildings: GHS-POP R2023A and GHS-BUILT-H (European Commission, JRC, CC BY 4.0); in Jakarta
+              <li>Sea-level projections: Fox-Kemper et al. 2021, IPCC AR6 WGI chapter 9
+                (<a href="https://doi.org/10.1017/9781009157896.011">doi:10.1017/9781009157896.011</a>); Kopp et al. 2023,
+                the FACTS model (<a href="https://doi.org/10.5194/gmd-16-7461-2023">doi:10.5194/gmd-16-7461-2023</a>); Garner
+                et al. 2021, IPCC AR6 Sea Level Projections, version 20210809
+                (<a href="https://doi.org/10.5281/zenodo.5914709">doi:10.5281/zenodo.5914709</a>),
+                <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. We thank the projection authors for
+                developing and making the sea-level rise projections available, multiple funding agencies for supporting
+                the development of the projections, and the NASA Sea Level Change Team for developing and hosting the IPCC
+                AR6 Sea Level Projection Tool.</li>
+              <li>Terrain: DeltaDTM v1.1.1, Pronk et al. 2024 (<a href="https://doi.org/10.4121/21997565">TU Delft</a>,
+                <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>); Majuro: USGS 1 m topobathymetric
+                model, Palaseanu-Lovejoy et al. 2017 (<a href="https://doi.org/10.5066/F7416VXX">doi:10.5066/F7416VXX</a>).
+                Relief above it: produced using Copernicus WorldDEM-30 © DLR e.V. 2010–2014 and © Airbus Defence and
+                Space GmbH 2014–2018 provided under COPERNICUS by the European Union and ESA; all rights reserved. The
+                organisations in charge of the Copernicus programme by law or by delegation do not incur any liability
+                for any use of the Copernicus WorldDEM-30. Seafloor: ETOPO 2022 (NOAA NCEI,
+                <a href="https://doi.org/10.25921/fd45-gt74">doi:10.25921/fd45-gt74</a>).</li>
+              <li>Mean sea level: DTU21 mean sea surface, © Technical University of Denmark (DTU Space), free for
+                non-commercial use; the EGM2008 geoid (NGA). High water: research-quality tide gauge data of the
+                University of Hawaii Sea Level Center (Caldwell et al. 2015,
+                <a href="https://doi.org/10.7289/V5V40S7W">doi:10.7289/V5V40S7W</a>) and PEGELONLINE (WSV,
+                DL-DE/Zero-2.0); for the Mekong Delta the EOT20 tide model (Hart-Davis et al. 2021,
+                <a href="https://doi.org/10.17882/79489">doi:10.17882/79489</a>, CC BY 4.0). Sandy’s peak: NOAA CO-OPS,
+                the Battery.</li>
+              <li>People and buildings: GHS-POP R2023A (Schiavina et al. 2023,
+                <a href="https://doi.org/10.2905/2FF68A52-5B5B-4A22-8F40-C41DA8332CFE">doi:10.2905/2FF68A52-5B5B-4A22-8F40-C41DA8332CFE</a>)
+                and GHS-BUILT-H R2023A (Pesaresi &amp; Politis 2023,
+                <a href="https://doi.org/10.2905/85005901-3A49-48DD-9D19-6261354F56FE">doi:10.2905/85005901-3A49-48DD-9D19-6261354F56FE</a>),
+                European Commission, JRC, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>; in Jakarta
                 scaled to sub-district counts from the BPS <em>Kecamatan … Dalam Angka 2026</em> yearbooks.</li>
-              <li>Jakarta’s sinking ground: Ohenhen et al. 2026 (Sentinel-1 radar 2017–2023, CC BY 4.0), checked against
-                Lăpădat &amp; Hanssen (2014–2025).</li>
-              <li>Borders, roads and place names: © OpenStreetMap contributors (ODbL).</li>
+              <li>Jakarta’s sinking ground: Ohenhen et al. 2026 (Sentinel-1 radar 2017–2023,
+                <a href="https://zenodo.org/records/15786357">Zenodo 15786357</a>, CC BY 4.0), checked against Lăpădat
+                &amp; Hanssen (2014–2025, preprint; data on
+                <a href="https://data.4tu.nl/datasets/39e7a39c-d305-425f-b238-1f3a4271dda9">4TU.ResearchData</a>,
+                Apache-2.0).</li>
+              <li>Borders, roads and place names: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (ODbL). The borders and names in this page’s data files (<code>blocks/*/admin.json</code>, <code>names.json</code>, <code>data/units.json</code>) are extracts of OpenStreetMap, available under the <a href="https://opendatacommons.org/licenses/odbl/1-0/">Open Database License 1.0</a>.</li>
               <li>Documented impacts, storms and defence heights: cited where they appear in the text. Defence heights are
                 converted to local mean sea level only where the source states its datum.</li>
             </ul>
@@ -517,7 +565,9 @@
       const picks = places.map((p) => MODELS.get(p.place_id)).map((c) => {
         const r = row(c.P, ssp, 2100);   // the chosen scenario's 2100 mark replaces the chapters' medium one
         const y = r.r == null ? [] : [{ key: 'y2100', text: '2100', m: c.lvl(r), tone: 'future', range: [c.base0 + r.rl, c.base0 + r.rh] }];
-        return { c, r, marks: [...c.marks.filter((k) => KEYS.includes(k.key)), ...y] };
+        // the ground mark: the typical height of the land below that scenario's 2100 line (follows the switch)
+        const g = r.g != null ? [{ key: 'ground', text: 'Ground', m: r.g, tone: 'ground' }] : c.marks.filter((k) => k.key === 'ground');
+        return { c, r, marks: [...g, ...c.marks.filter((k) => KEYS.includes(k.key) && k.key !== 'ground'), ...y] };
       });
       const rel = picks.flatMap(({ c, marks }) => marks.filter((k) => k.key !== 'crest').flatMap((k) => [k.m, ...(k.range || [])].map((v) => v - c.msl)));
       const LO = Math.floor(Math.min(...rel) - 0.3), HI0 = Math.ceil(Math.max(...rel) + 0.5);
@@ -555,10 +605,10 @@
       const base = o('ssp245', 2100);
       if (!glob || !base) { sec.hidden = true; pl.hidden = true; compare('ssp245'); return; }
       sec.querySelector('#slc-hero-today').innerHTML = `${fmt(glob.value / 1e6)}<small> million</small>`;
-      sec.querySelector('#slc-hero-today-text').innerHTML = `people live on land that already lies below the high-tide line:
-        land kept dry by dikes, walls and pumps, or not kept dry at all. ${src(glob)}`;
-      sec.querySelector('.slc-overview__context').innerHTML = `Both figures count people where they lived in 2010 and do not
-        consider defences; the study used the earlier RCP scenarios with the same end-of-century forcing. ${commit ? `${esc(commit.text)} ${src(commit, ', B.5.4')}` : ''}`;
+      sec.querySelector('#slc-hero-today-text').innerHTML = `people live on land that the study places below today’s high-tide line. Many are protected by levees and
+        sea walls; the authors note that part of the figure may reflect errors in the elevation data. ${src(glob)}`;
+      sec.querySelector('.slc-overview__context').innerHTML = `Both figures count people where they lived in 2010, treat the sea level of 2000 as the present,
+        and do not consider defences; the study used the earlier RCP scenarios, which reach about the same end-of-century forcing. ${commit ? `${esc(commit.text)} ${src(commit, ', B.5.4')}` : ''}`;
       // The mapped places: why each is a good example, with a link to its 3D view. Their number, in words, in the headings.
       const nMapped = chapters.filter(({ hasBlock }) => hasBlock).length, nShores = places.length;
       root.querySelectorAll('.slc-nplaces').forEach((e) => { e.textContent = word(nMapped); });
@@ -566,13 +616,13 @@
       root.querySelectorAll('.slc-nshores').forEach((e) => { e.textContent = word(nShores); });
       const WHY = {
         majuro: 'The capital of an atoll nation, on a thin ring of coral islets with no high ground: king tides and ocean swells already flood parts of the capital.',
-        jakarta: 'A capital that sinks faster than the sea rises: decades of groundwater pumping have lowered the north so far that parts already lie below the sea. It shows how a local cause adds to climate change.',
+        jakarta: 'A capital that sinks faster than the sea rises: groundwater pumping, together with the weight of buildings and the natural settling of young soils, has lowered the north so far that parts already lie below the high-tide line. It shows how local causes add to climate change.',
         'new-york': 'A rich city with little land below the daily tide. Its danger is the storm on top of a higher sea, as Hurricane Sandy showed in 2012.',
         hamburg: 'The defended city: far up the Elbe, yet reached by the tide. Since the deadly flood of 1962 it has relied on dikes and walls, which are now being raised again.',
         mekong: 'Viet Nam’s rice bowl, so low and flat that the ordinary high tide already stands above much of the land, while salt water pushes up the river arms.',
         khulna: 'Islands ringed by embankments beside the Sundarbans mangroves, where cyclones break the walls and salt water spoils the fields.',
         'nile-delta': 'Egypt’s farmland and its second city on a delta that sinks and wears away, since the Aswan dam stopped the sediment that built it.',
-        louisiana: 'A coast that has lost about a quarter of its land since 1932 as it sinks and erodes; one island community has already been moved inland.',
+        louisiana: 'A coast that has lost about a quarter of its land since 1932 as it sinks and erodes; most families of one island community have resettled about 40 miles inland.',
       };
       pl.querySelector('.slc-places__list').innerHTML = chapters.filter(({ hasBlock }) => hasBlock).map(({ c }) => `<li>
         <a class="slc-places__name" href="#slc-ch-${c.P}">${esc(c.p.name.split(/[:,]| and the /)[0])}</a>
@@ -580,15 +630,18 @@
         <a class="slc-places__go" href="#slc-ch-${c.P}">3D view ↓</a></li>`).join('');
       pl.querySelector('.slc-overview__note').textContent = `How the figures for the ${word(nMapped)} places are made: central estimates
         from the same model as the chapters. People are counted where they live today (GHS-POP 2025). The ground sinks no
-        further after today; where it keeps sinking, as in Jakarta, more land would fall below the line. Outside Jakarta the
-        terrain dates from about 2011–2016, so land that has sunk since lies lower than the model says: if anything, the
-        figures are too low. Defences are not modelled.`;
+        further after today; where it keeps sinking, as in Jakarta, more land would fall below the line. The terrain model
+        errs both ways: its heights date from about 2011–2015, so land that has sunk since lies lower than it says (the
+        figures too low); on built-up land it reads about a quarter of a metre too low on average, and it can remove
+        embankments (the figures too high). Its errors, tens of centimetres, are larger than the steps between today, 2050
+        and 2100, so the changes from one year to the next are less certain than the totals. Defences are not modelled.`;
       let cur = 'ssp245';
       const draw = () => {
         const g = fact(cur, 'people_below_high_tide_2100'), r = o(cur, 2100);
         sec.querySelector('#slc-hero-2100').innerHTML = `${fmt(g.value / 1e6)}<small> million</small>`;
         sec.querySelector('#slc-hero-2100-text').innerHTML = `people live today on land that would lie below the high-tide line
-          by 2100 with ${SCEN[cur]} (90% range ${fmt(g.lo / 1e6)}–${fmt(g.hi / 1e6)} million; ${RCP[cur]} in the study). ${src(g)}`;
+          by 2100 with ${SCEN[cur]} (90% range ${fmt(g.lo / 1e6)}–${fmt(g.hi / 1e6)} million from the uncertainty of the sea-level
+          projection alone; ${RCP[cur]} and the study’s K14 sea-level model, the lower of its two). ${src(g)}`;
         const em = fact(cur, 'emissions'), wm = fact(cur, 'warming'), sl = fact(cur, 'gmsl_2100');
         sec.querySelector('.slc-overview__scen').innerHTML = em && wm && sl ? `<strong>${esc(LABEL[cur])} (${CODE[cur]}):</strong>
           ${esc(em.text)} Warming by 2081–2100 of about ${fmt(wm.value, 1)} °C above 1850–1900 (very likely ${fmt(wm.lo, 1)}–${fmt(wm.hi, 1)} °C).
@@ -652,7 +705,7 @@
         input.value = '';
         input.placeholder = b.names.length ? `e.g. ${b.names[0].text}` : '';
         panel.querySelector('#slc-names').innerHTML = b.names.map((n) => `<option value="${esc(n.text)}"></option>`).join('');
-        const cell_m = (b.meta.width_km * 1000) / b.meta.spill_cols;
+        const cell_m = (b.meta.width_km * 1000) / (b.spillWidth || b.meta.spill_cols);   // the published raster, which can be thinned
         panel.querySelector('.slc-caveat').textContent = `The flood model uses a grid of about ${fmt(cell_m)} m, so it shows
           a neighbourhood, not a single house. Sea walls, dikes, pumps and drains are not modelled${X.sink ? ', and neither is the ground sinking further unless you choose “keeps sinking”. The sinking rates come from satellite radar 2017–2023 and are a scenario, not a forecast' : ''}.`;
         b.view(ALL, 0);
@@ -681,8 +734,11 @@
       panel.querySelectorAll('.slc-seg').forEach((g) => g.querySelectorAll('button').forEach((btn) =>
         btn.setAttribute('aria-pressed', String(state[g.dataset.k] === btn.dataset.v))));
       const isToday = state.year === 'today';
-      panel.querySelector('[data-k="ssp"]').classList.toggle('is-off', isToday);
-      panel.querySelector('[data-k="ground"]').classList.toggle('is-off', isToday);
+      for (const k of ['ssp', 'ground']) {
+        const g = panel.querySelector(`[data-k="${k}"]`);
+        g.classList.toggle('is-off', isToday);
+        g.querySelectorAll('button').forEach((btn) => { btn.disabled = isToday; });
+      }
       if (!X) return;
       X.b.level(isToday ? X.c.tide : rowX(state.ssp, +state.year).wl, fly(900));
       if (X.sink) X.b.sinkTo(isToday ? 'none' : key(+state.year), fly(900));
@@ -741,11 +797,14 @@
       const when = isToday ? 'today' : `in ${state.year} with ${NAME[state.ssp]} emissions`;
       const area = q.subdistrict || q.district;
       const e = area && exposure(X.P, es, ey, area.id, subFor());
-      const kind = q.subdistrict ? 'sub-district' : 'district';
+      const UNIT = { jakarta: ['kecamatan', 'kelurahan'], majuro: ['municipality'], 'new-york': ['county', 'community district'],
+        hamburg: ['borough', 'quarter'], mekong: ['ward or commune'], khulna: ['upazila (in India: block)'], 'nile-delta': ['governorate'],
+        louisiana: ['parish', 'municipality'] }[X.P] || ['district', 'sub-district'];
+      const kind = q.subdistrict ? UNIT[1] : UNIT[0];
       const areaLine = !e ? '' : e.pop < 50
         ? `<p class="slc-area">In the ${kind} of ${esc(area.name)}, almost nobody lives on land below the high-tide line ${when}.</p>`
-        : `<p class="slc-area">In the ${kind} of ${esc(area.name)}, <strong>${fmt((e.pop / e.tot) * 100)}%</strong> of its
-            roughly ${people(e.tot)} residents, about ${people(e.pop)} people, live on land below the high-tide line ${when}.</p>`;
+        : `<p class="slc-area">In the ${kind} of ${esc(area.name)}, <strong>${fmt((e.pop / e.tot) * 100)}%</strong> of the
+            roughly ${people(e.tot)} residents inside this map, about ${people(e.pop)} people, live on land below the high-tide line ${when}.</p>`;
       // Jakarta: the spot's own split, how much the sea rises and how much the ground sinks by the year shown.
       let split = '';
       if (!isToday && q.vlm != null && X.sink) {
