@@ -388,9 +388,9 @@
               People: GHS-POP 2025 (JRC); Jakarta scaled to BPS kelurahan counts.</p>
           </figure>
           <div class="slc-explore__panel">
-            <label class="slc-pick">Place
+            <div class="slc-tools"><label class="slc-pick" for="slc-place"><span>Place</span>
               <select id="slc-place">${chapters.filter((x) => x.hasBlock).map(({ c }) => `<option value="${c.P}">${esc(c.p.name)}</option>`).join('')}</select>
-            </label>
+            </label></div>
             <div class="slc-field"><p class="slc-field__label" id="slc-l-year">Year</p>
               <div class="slc-seg" role="group" aria-labelledby="slc-l-year" data-k="year">
                 <button type="button" data-v="today">Today</button><button type="button" data-v="2050">2050</button><button type="button" data-v="2100">2100</button>
@@ -405,9 +405,9 @@
               </div>
               <p class="slc-note">Keeps sinking: the sinking slows, halving every 30 years.</p>
             </div>
-            <form class="slc-search" role="search">
-              <label for="slc-q">Find a neighbourhood</label>
-              <input id="slc-q" type="search" list="slc-names" autocomplete="off">
+            <form class="slc-search slc-tools" role="search">
+              <label class="slc-find" for="slc-q"><svg class="slc-mag" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.5" cy="6.5" r="4.75"/><line x1="10" y1="10" x2="14.5" y2="14.5"/></svg><span>Find a neighbourhood</span>
+              <input id="slc-q" type="search" list="slc-names" autocomplete="off"></label>
               <datalist id="slc-names"></datalist>
             </form>
             <button type="button" class="slc-locate">Use my location</button>

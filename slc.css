@@ -65,10 +65,8 @@
 /* ---------- Explorer: zoom in and look up a spot ---------- */
 .slc .b3d-label.b3d-place { font-family: var(--font-support); font-size: 0.72rem; color: var(--muted);
   text-shadow: 0 0 2px var(--paper), 0 0 4px var(--paper), 0 0 6px var(--paper); }
-.slc .slc-search { display: grid; gap: 0.25rem; }
-.slc .slc-search label { color: var(--muted); }
-.slc .slc-search input { font: inherit; padding: 0.45rem 0.6rem; border: 1px solid var(--ink); border-radius: 0;
-  background: var(--paper); color: var(--ink); }
+.slc .slc-find { flex: 1 1 100%; }
+.slc .slc-tools .slc-pick { flex: 1 1 100%; }
 .slc .slc-explore { position: relative; padding-block: 3rem 2rem; border-top: 1px solid var(--rule); }
 .slc .slc-explore h2 { font-size: var(--step-2); line-height: 1.15; margin: 0 0 0.5rem; color: var(--ink); }
 .slc .slc-explore__dek { max-width: 40rem; color: var(--muted); margin: 0 0 1.25rem; }
@@ -174,8 +172,6 @@
 .slc .slc-compare__cell figcaption { font-family: var(--font-support); font-size: var(--step--1); color: var(--ink); }
 .slc .slc-compare__cell .slc-staff { width: 100%; height: auto; max-width: 190px; }
 .slc .slc-compare__note { margin-top: 1rem; }
-.slc .slc-pick { display: grid; gap: 0.25rem; color: var(--muted); }
-.slc .slc-pick select { font: inherit; padding: 0.45rem 0.6rem; border: 1px solid var(--ink); border-radius: 0; background: var(--paper); color: var(--ink); }
 .slc .slc-ground[hidden] { display: none; }
 
 @container slc (max-width: 860px) {
@@ -278,3 +274,36 @@
 
 /* without WebGL the explorer has no map: the frame holds only its note (review F3) */
 .slc .slc-block--explore.is-textonly { height: auto; min-height: 0; cursor: auto; }
+
+/* Controls on the rule, as in the other articles of the series (Europe's Divides): a 44px row on a thin rule, a mono label,
+   no box; a thick ink bar under the field in use; a chevron on dropdowns. */
+.slc .slc-tools { display: flex; flex-wrap: wrap; align-items: stretch; column-gap: 1.5rem;
+  background: repeating-linear-gradient(to bottom, transparent 0 43px, var(--rule) 43px 44px); }
+.slc .slc-find, .slc .slc-pick { position: relative; display: flex; align-items: center; gap: 0.55rem; height: 44px; min-width: 0;
+  font-family: var(--font-support); font-size: 0.875rem; color: var(--muted); }
+.slc .slc-find { cursor: text; }
+.slc .slc-pick { cursor: pointer; }
+.slc .slc-find:focus-within, .slc .slc-pick:focus-within { color: var(--ink); box-shadow: inset 0 -4px 0 var(--ink); }
+.slc .slc-find > span, .slc .slc-pick > span { white-space: nowrap; }
+.slc .slc-mag { width: 15px; height: 15px; flex: none; }
+.slc .slc-mag circle, .slc .slc-mag line { fill: none; stroke: currentColor; stroke-width: 1.6; }
+.slc .slc-find input { -webkit-appearance: none; appearance: none; border: 0; border-radius: 0; background: none; margin: 0; padding: 0;
+  font: inherit; font-family: var(--font-text); font-size: 0.9375rem; color: var(--ink); width: 100%; min-width: 5rem; height: 100%; outline: 0; }
+.slc .slc-find input::placeholder { color: var(--muted); opacity: 0.8; }
+.slc .slc-find input::-webkit-search-decoration, .slc .slc-find input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.slc .slc-find input::-webkit-calendar-picker-indicator { display: none !important; }
+.slc .slc-find input[type="number"] { -moz-appearance: textfield; }
+.slc .slc-find input::-webkit-inner-spin-button, .slc .slc-find input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.slc .slc-pick select { -webkit-appearance: none; appearance: none; border: 0; border-radius: 0; background: none; margin: 0;
+  font: inherit; font-family: var(--font-support); font-size: 0.875rem; font-weight: 500; color: var(--ink);
+  height: 100%; min-width: 0; max-width: 100%; padding: 0 1.4rem 0 0; cursor: pointer; outline: 0; text-overflow: ellipsis; }
+.slc .slc-pick select option { color: initial; background: initial; }
+.slc .slc-tools, .slc .slc-pick { min-width: 0; max-width: 100%; }
+.slc .slc-pick select { flex: 1 1 0; width: 0; }   /* long option names must not widen the column on phones */
+.slc .slc-pick::after { content: ""; position: absolute; right: 0.2rem; top: 50%; width: 6px; height: 6px; margin-top: -5px;
+  border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); pointer-events: none; }
+@media (forced-colors: active) {
+  .slc .slc-tools { background: none; }
+  .slc .slc-find, .slc .slc-pick { border-bottom: 1px solid CanvasText; }
+  .slc .slc-find:focus-within, .slc .slc-pick:focus-within { border-bottom-width: 4px; box-shadow: none; }
+}
