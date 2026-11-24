@@ -333,18 +333,24 @@
         <p class="slc-overview__context"></p>
       </section>
       <section class="slc-places" id="slc-places" aria-labelledby="slc-places-h">
-        <h2 id="slc-places-h"><span class="slc-nplaces-cap"></span> places, <span class="slc-nplaces"></span> ways the sea gets in</h2>
-        <p class="slc-places__lead" aria-live="polite"></p>
-        <ul class="slc-places__list"></ul>
-        <p class="slc-places__cta"><a href="#slc-explore-h">Look up a spot</a>: pick one of the <span class="slc-nplaces"></span> places, zoom in, tap a street or use your location, and see whether high water would reach it.</p>
-        <p class="slc-overview__note"></p>
+        <div class="block"><div class="block__rail">
+          <h2 id="slc-places-h"><span class="slc-nplaces-cap"></span> places, <span class="slc-nplaces"></span> ways the sea gets in</h2>
+          <p class="slc-places__lead" aria-live="polite"></p>
+          <p class="slc-places__cta"><a href="#slc-explore-h">Look up a spot</a>: pick one of the <span class="slc-nplaces"></span> places, zoom in, tap a street or use your location, and see whether high water would reach it.</p>
+        </div><div class="block__body">
+          <ul class="slc-places__list"></ul>
+          <p class="slc-overview__note"></p>
+        </div></div>
       </section>
       <section class="slc-compare" aria-labelledby="slc-compare-h">
+        <div class="block"><div class="block__rail">
         <h2 id="slc-compare-h">The same sea, <span class="slc-nshores"></span> shores</h2>
         <p class="slc-compare__dek">All the staffs side by side, each with its zero at its own mean sea level. The water
           stands where high water would be in 2100 with <span class="slc-compare__scen">medium emissions</span> (the emissions switch at the top); the dashed mark is the typical height of the land that line would reach.</p>
+        </div><div class="block__body">
         <div class="slc-compare__row"></div>
         <p class="slc-note slc-compare__note"></p>
+        </div></div>
       </section>
       <section class="slc-intro">
         <p>Each chapter reads the water off one ruler: a <strong>gauge staff</strong>, like the ones on harbour walls,
