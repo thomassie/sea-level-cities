@@ -55,7 +55,7 @@
   const NO_CHAPTER = new Set([]);
   const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
 
-  Promise.all(['places', 'scenarios', 'units', 'exposure', 'overview', 'overview_facts'].map((f) => d3.json(`${base}data/${f}.json`))).then(([places, scen, units, expo, overview, ofacts]) => {
+  Promise.all(['places', 'scenarios', 'units', 'exposure', 'overview', 'overview_facts', 'meta'].map((f) => d3.json(`${base}data/${f}.json`))).then(([places, scen, units, expo, overview, ofacts, meta]) => {
     places.sort((a, b) => a.chapter_order - b.chapter_order);
     const byId = new Map(places.map((p) => [p.place_id, p]));
     const row = (P, s, y, sub = 'none', w = 'high_tide') =>
@@ -425,6 +425,7 @@
       </section>
       <section class="slc-method" aria-labelledby="slc-method-h">
         <h2 id="slc-method-h">Sources and method</h2>
+        ${meta && meta[0] && meta[0].generated_at ? `<p class="slc-updated">Data updated ${d3.utcFormat('%-d %B %Y')(new Date(meta[0].generated_at))}.</p>` : ''}
         <div class="slc-method__cols">
           <div>
             <h3>What the maps show</h3>

@@ -216,6 +216,7 @@
 .slc .slc-method p + p { margin-top: 0.6rem; }
 .slc .slc-method ul { list-style: none; display: grid; gap: 0.5rem; font-size: var(--step--1); font-family: var(--font-support); }
 .slc .slc-method em { font-style: italic; }
+.slc .slc-method .slc-updated { margin: -0.4rem 0 1rem; font-family: var(--font-support); font-size: var(--step--1); }
 @container slc (max-width: 860px) { .slc .slc-method__cols { grid-template-columns: minmax(0, 1fr); } }
 
 /* Section headings end in a red dot, as the series title does (og.png, europes-divides). */
